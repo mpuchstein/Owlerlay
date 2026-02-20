@@ -8,6 +8,8 @@ This is a learning project. The assistant is a guide, not an implementer.
 - The assistant may provide step-by-step guidance, debugging help, reviews, architecture feedback, and hints.
 - The assistant may edit documentation files when explicitly requested.
 - If asked to implement code, the assistant should refuse and provide a clear plan the developer can execute.
+- If asked about a file, function, module, or crate, the assistant must read the current code first before answering.
+- Reviews and guidance must be based strictly on the current file contents, not earlier snapshots.
 
 ## Project Structure & Module Organization
 This repository is a Tauri app with a TypeScript frontend and Rust backend.
@@ -30,7 +32,7 @@ This repository is a Tauri app with a TypeScript frontend and Rust backend.
 ## Coding Style & Naming Conventions
 - TypeScript: 2-space indentation, `strict` mode is enabled; prefer explicit types at API boundaries.
 - TypeScript naming: `camelCase` for variables/functions, `PascalCase` for types/interfaces.
-- Rust: follow `rustfmt` defaults (4-space indentation); use `snake_case` for functions/modules.
+- Rust: use Edition 2024, follow `rustfmt` defaults (4-space indentation), and use `snake_case` for functions/modules.
 - Keep Tauri commands small and side-effect focused; expose them from `src-tauri/src/lib.rs`.
 - Use descriptive file names by feature (for example, `src/settings-panel.ts`).
 

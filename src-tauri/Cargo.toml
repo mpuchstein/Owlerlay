@@ -2,8 +2,8 @@
 name = "owlerlay"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
-edition = "2021"
+authors = ["s0wlz"]
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,4 +30,4 @@ tokio = { version = "1.49.0", features = ["full"] }
 tower-http = { version = "0.6.8", features = ["fs", "cors"] }
 minijinja = "2.15.1"
 toml = "1.0.3"
-
+chrono = "0.4.43"
