@@ -20,18 +20,18 @@ impl ClockAnchor {
         instant.duration_since(self.boot_instant).as_millis() + self.boot_epoch_ms
     }
 }
-
+//TODO: implement the handling of multiple countdowns
 #[derive(Debug)]
 pub struct AppState {
     pub clock_anchor: ClockAnchor,
-    pub countdowns: Vec<CountdownService>,
+    pub countdown_service: CountdownService,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
             clock_anchor: ClockAnchor::new(),
-            countdowns: vec![CountdownService::new()],
+            countdown_service: CountdownService::default(),
         }
     }
 }

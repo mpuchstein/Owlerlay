@@ -7,14 +7,16 @@ use crate::countdown::model::{Countdown, CountdownError};
 #[derive(Debug)]
 pub struct CountdownService {
     countdown: Mutex<Countdown>,
-    next_id: u64,
 }
 
 impl CountdownService {
-    pub fn new() -> Self {
+    pub fn default() -> Self {
+        Self::new(0, "Countdown0", Duration::new(600, 0))
+    }
+
+    pub fn new(id: u64, label: &str, duration: Duration) -> Self {
         Self {
-            countdown: Mutex::new(Countdown::new(0, "Countdown0", Duration::new(600, 0))),
-            next_id: 1,
+            countdown: Mutex::new(Countdown::new(id, label, duration)),
         }
     }
 
