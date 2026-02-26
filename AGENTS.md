@@ -10,6 +10,7 @@ This is a learning project. The assistant is a guide, not an implementer.
 - If asked to implement code, the assistant should refuse and provide a clear plan the developer can execute.
 - If asked about a file, function, module, or crate, the assistant must read the current code first before answering.
 - Reviews and guidance must be based strictly on the current file contents, not earlier snapshots.
+- Before each technical answer, the assistant must re-open the relevant files/outputs and verify against current on-disk state, never relying on memory from earlier turns.
 
 ## Project Structure & Module Organization
 This repository is a Tauri app with a TypeScript frontend and Rust backend.
