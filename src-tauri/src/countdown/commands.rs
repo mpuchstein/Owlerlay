@@ -4,15 +4,13 @@ use crate::AppState;
 use tauri::{command, State};
 use tokio::time::Instant;
 
-type CmdResult<T> = Result<T, String>;
-
 #[command]
 pub async fn countdown_start(state: State<'_, AppState>) -> Result<(), String> {
     state
         .countdown_service
         .start(Instant::now())
         .await
-        .map_err(|e: CountdownError| format!("{e:?}"))?;
+        .map_err(|e: CountdownError| e.to_string())?;
     Ok(())
 }
 
@@ -28,7 +26,7 @@ pub async fn countdown_pause(state: State<'_, AppState>) -> Result<(), String> {
         .countdown_service
         .pause(Instant::now())
         .await
-        .map_err(|e: CountdownError| format!("{e:?}"))?;
+        .map_err(|e: CountdownError| e.to_string())?;
     Ok(())
 }
 
@@ -38,7 +36,7 @@ pub async fn countdown_resume(state: State<'_, AppState>) -> Result<(), String> 
         .countdown_service
         .resume(Instant::now())
         .await
-        .map_err(|e: CountdownError| format!("{e:?}"))?;
+        .map_err(|e: CountdownError| e.to_string())?;
     Ok(())
 }
 
@@ -58,7 +56,7 @@ pub async fn countdown_snapshot(
     Ok(CountdownSnapshotDto {
         id: countdown_snapshot.id,
         label: countdown_snapshot.label,
-        duration: countdown_snapshot.duration,
+        duration: countdown_snapshot.duration.as_millis(),
         state: countdown_snapshot.state,
         start_epoch_ms: start,
         target_epoch_ms: target,

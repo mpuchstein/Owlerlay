@@ -30,7 +30,7 @@ impl CountdownService {
     }
 
     pub async fn snapshot(&self, now: Instant) -> CountdownSnapshot {
-        let countdown = self.countdown.lock().await.clone();
+        let countdown = self.countdown.lock().await;
         CountdownSnapshot {
             id: countdown.id(),
             label: countdown.label().to_string(),

@@ -17,7 +17,10 @@ impl ClockAnchor {
     }
 
     pub fn instant_to_epoch_ms(&self, instant: tokio::time::Instant) -> u128 {
-        instant.duration_since(self.boot_instant).as_millis() + self.boot_epoch_ms
+        match instant.checked_duration_since(self.boot_instant) {
+            Some(duration) => duration.as_millis() + self.boot_epoch_ms,
+            None => return 0,
+        }
     }
 }
 //TODO: implement the handling of multiple countdowns
