@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -43,12 +42,28 @@ impl Countdown {
         }
     }
 
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     pub fn state(&self) -> CountdownState {
         self.state
     }
 
     pub fn initial_duration(&self) -> Duration {
         self.initial_duration
+    }
+
+    pub fn start_timestamp(&self) -> Option<Instant> {
+        self.start_timestamp
+    }
+
+    pub fn target_timestamp(&self) -> Option<Instant> {
+        self.target_timestamp
     }
 
     pub fn remaining_at(&self, now: Instant) -> Duration {
@@ -164,29 +179,6 @@ impl Countdown {
         self.remaining_duration_stored = Some(Duration::from_secs(0));
         self.start_timestamp = None;
         self.target_timestamp = None;
-    }
-
-    pub fn start_epoch_ms(&self) -> u128 {
-        let anchor_instant = Instant::now();
-        let anchor_epoch_ms = SystemTime::now();
-        let anchor_epoch_ms = anchor_epoch_ms.duration_since(UNIX_EPOCH).unwrap();
-        anchor_instant
-            .checked_duration_since(self.start_timestamp.unwrap())
-            .unwrap()
-            .as_millis()
-            - anchor_epoch_ms.as_millis()
-    }
-
-    pub fn target_epoch_ms(&self) -> u128 {
-        let anchor_instant = Instant::now();
-        let anchor_epoch_ms = SystemTime::now();
-        let anchor_epoch_ms = anchor_epoch_ms.duration_since(UNIX_EPOCH).unwrap();
-        self.target_timestamp
-            .unwrap()
-            .checked_duration_since(anchor_instant)
-            .unwrap()
-            .as_millis()
-            + anchor_epoch_ms.as_millis()
     }
 }
 

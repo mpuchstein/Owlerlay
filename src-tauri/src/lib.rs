@@ -1,3 +1,5 @@
+extern crate core;
+
 mod app_state;
 mod countdown;
 

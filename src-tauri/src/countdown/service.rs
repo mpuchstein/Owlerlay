@@ -1,12 +1,20 @@
+use crate::countdown::model::{Countdown, CountdownError, CountdownState};
 use tokio::sync::Mutex;
 use tokio::time::{Duration, Instant};
-
-use crate::countdown::dto::CountdownSnapshotDto;
-use crate::countdown::model::{Countdown, CountdownError};
 
 #[derive(Debug)]
 pub struct CountdownService {
     countdown: Mutex<Countdown>,
+}
+
+#[derive(Debug)]
+pub struct CountdownSnapshot {
+    pub id: u64,
+    pub label: String,
+    pub state: CountdownState,
+    pub duration: Duration,
+    pub start_instant: Option<Instant>,
+    pub target_instant: Option<Instant>,
 }
 
 impl CountdownService {
@@ -20,15 +28,15 @@ impl CountdownService {
         }
     }
 
-    pub async fn snapshot(&self, now: Instant) -> CountdownSnapshotDto {
-        let countdown = self.countdown.lock().await;
-        CountdownSnapshotDto {
-            id: countdown.id,
-            label: countdown.label.to_string(),
+    pub async fn snapshot(&self, now: Instant) -> CountdownSnapshot {
+        let countdown = self.countdown.lock().await.clone();
+        CountdownSnapshot {
+            id: countdown.id(),
+            label: countdown.label().parse().unwrap(),
             state: countdown.state(),
-            duration: countdown.remaining(),
-            start_epoch_ms: Some(countdown.start_epoch_ms()),
-            target_epoch_ms: Some(countdown.target_epoch_ms()),
+            duration: countdown.remaining_at(now),
+            start_instant: countdown.start_timestamp(),
+            target_instant: countdown.target_timestamp(),
         }
     }
 
