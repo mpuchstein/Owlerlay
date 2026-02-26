@@ -1,4 +1,4 @@
-use tokio::time::{Duration, Instant};
+use tokio::time::Duration;
 
 use crate::countdown::model::CountdownState;
 
@@ -8,8 +8,8 @@ pub struct CountdownSnapshotDto {
     pub label: String,
     pub duration: Duration,
     pub state: CountdownState,
-    pub start_epoch_ms: Option<u64>,
-    pub target_epoch_ms: Option<u64>,
+    pub start_epoch_ms: Option<u128>,
+    pub target_epoch_ms: Option<u128>,
 }
 
 impl CountdownSnapshotDto {
@@ -18,8 +18,8 @@ impl CountdownSnapshotDto {
         label: String,
         duration: Duration,
         state: CountdownState,
-        start_epoch_ms: Option<u64>,
-        target_epoch_ms: Option<u64>,
+        start_epoch_ms: Option<u128>,
+        target_epoch_ms: Option<u128>,
     ) -> Self {
         Self {
             id,
