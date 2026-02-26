@@ -1,4 +1,5 @@
-use crate::countdown::model::{Countdown, CountdownError, CountdownState};
+use crate::countdown::errors::CountdownError;
+use crate::countdown::model::{Countdown, CountdownState};
 use tokio::sync::Mutex;
 use tokio::time::{Duration, Instant};
 
@@ -32,7 +33,7 @@ impl CountdownService {
         let countdown = self.countdown.lock().await.clone();
         CountdownSnapshot {
             id: countdown.id(),
-            label: countdown.label().parse().unwrap(),
+            label: countdown.label().to_string(),
             state: countdown.state(),
             duration: countdown.remaining_at(now),
             start_instant: countdown.start_timestamp(),

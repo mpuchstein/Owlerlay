@@ -3,6 +3,9 @@ extern crate core;
 mod app_state;
 mod countdown;
 
+use crate::countdown::commands::{
+    countdown_pause, countdown_reset, countdown_resume, countdown_snapshot, countdown_start,
+};
 pub use app_state::AppState;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -17,7 +20,14 @@ pub fn run() {
     tauri::Builder::default()
         .manage(app_state)
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            countdown_start,
+            countdown_reset,
+            countdown_pause,
+            countdown_resume,
+            countdown_snapshot,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

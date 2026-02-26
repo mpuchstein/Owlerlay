@@ -1,3 +1,4 @@
+use crate::countdown::errors::CountdownError;
 use serde::{Deserialize, Serialize};
 use tokio::time::{Duration, Instant};
 
@@ -7,15 +8,6 @@ pub enum CountdownState {
     Running,
     Paused,
     Finished,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CountdownError {
-    InvalidTransition {
-        from: CountdownState,
-        action: &'static str,
-    },
-    TimeOverflow,
 }
 
 #[derive(Debug, Clone)]
