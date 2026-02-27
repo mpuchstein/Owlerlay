@@ -1,5 +1,5 @@
-import {formatDuration} from "./helper.ts";
-import {CountdownSnapshot} from "./types.ts";
+import type {CountdownSnapshot} from "./model/countdown.types";
+import {formatDuration} from "../../shared/time/duration";
 
 export type CountdownView = {
     onStart: (handler: () => void) => void;

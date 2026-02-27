@@ -1,4 +1,4 @@
-import type {Duration} from "../../shared/time/duration";
+import type {Duration} from "../../../shared/time/duration";
 
 export type CountdownState = "Idle" | "Running" | "Paused" | "Finished";
 

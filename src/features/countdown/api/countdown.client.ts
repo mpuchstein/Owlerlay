@@ -1,6 +1,6 @@
-import {invokeCommand} from "../../shared/tauri/invoke";
-import {CountdownCommand, CountdownSnapshot, CountdownState, Duration} from "./types";
-import {millisToDuration} from "./helper.ts";
+import {invokeCommand} from "../../../shared/tauri/invoke";
+import type {CountdownCommand, CountdownSnapshot, CountdownState} from "../model/countdown.types";
+import {type Duration, millisToDuration} from "../../../shared/time/duration";
 
 type CountdownSnapshotDto = {
     id: number;
