@@ -10,4 +10,16 @@ pub enum CountdownError {
     },
     #[error("Time overflow")]
     TimeOverflow,
+    #[error("Id not found")]
+    IdNotFound,
+    #[error("Label not found")]
+    LabelNotFound,
+    #[error("Invalid duration")]
+    InvalidDuration,
+    #[error("Invalid state")]
+    InvalidState,
+    #[error("Invalid action")]
+    InvalidAction,
+    #[error("Max countdowns reached")]
+    MaxCountdownsReached,
 }

@@ -7,22 +7,13 @@ export type Duration = {
     millis: number;
 }
 
-export type CountdownSnapshotDto = {
-    id: number;
-    label: string;
-    duration: number;
-    state: CountdownState;
-    start_epoch_ms: number | null;
-    target_epoch_ms: number | null;
-};
-
 export type CountdownSnapshot = {
     id: number;
     label: string;
     duration: Duration;
     state: CountdownState;
-    start_epoch_ms: Date | null;
-    target_epoch_ms: Date | null;
+    start_epoch: Date | null;
+    target_epoch: Date | null;
 }
 
 export type CountdownCommand =

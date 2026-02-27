@@ -1,11 +1,15 @@
 use crate::countdown::errors::CountdownError;
 use crate::countdown::model::{Countdown, CountdownState};
+use std::collections::HashMap;
 use tokio::sync::Mutex;
 use tokio::time::{Duration, Instant};
 
+const MAX_COUNTDOWNS: usize = 10;
+
 #[derive(Debug)]
 pub struct CountdownService {
-    countdown: Mutex<Countdown>,
+    countdowns: Mutex<HashMap<u64, Countdown>>,
+    next_id: Mutex<u64>,
 }
 
 #[derive(Debug)]
@@ -19,45 +23,123 @@ pub struct CountdownSnapshot {
 }
 
 impl CountdownService {
-    pub fn default() -> Self {
-        Self::new(0, "Countdown0", Duration::new(600, 0))
-    }
-
-    pub fn new(id: u64, label: &str, duration: Duration) -> Self {
+    pub fn new() -> Self {
         Self {
-            countdown: Mutex::new(Countdown::new(id, label, duration)),
+            countdowns: Mutex::new(HashMap::new()),
+            next_id: Mutex::new(0),
         }
     }
 
-    pub async fn snapshot(&self, now: Instant) -> CountdownSnapshot {
-        let countdown = self.countdown.lock().await;
-        CountdownSnapshot {
-            id: countdown.id(),
-            label: countdown.label().to_string(),
-            state: countdown.state(),
-            duration: countdown.remaining_at(now),
-            start_instant: countdown.start_timestamp(),
-            target_instant: countdown.target_timestamp(),
+    pub async fn create_countdown(
+        &self,
+        label: String,
+        duration: Duration,
+    ) -> Result<u64, CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if countdowns.len() >= MAX_COUNTDOWNS {
+            Err(CountdownError::MaxCountdownsReached)
+        } else {
+            if label.is_empty() {
+                return Err(CountdownError::LabelNotFound);
+            }
+            if duration.as_millis() == 0 {
+                return Err(CountdownError::InvalidDuration);
+            }
+            let mut next_id = self.next_id.lock().await;
+            let id = *next_id;
+            *next_id += 1;
+            countdowns.insert(id, Countdown::new(label, duration));
+            Ok(id)
         }
     }
 
-    pub async fn start(&self, now: Instant) -> Result<(), CountdownError> {
-        let mut countdown = self.countdown.lock().await;
-        countdown.start(now)
+    pub async fn list_countdown(&self) -> Result<Vec<CountdownSnapshot>, CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if countdowns.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut snapshots = Vec::new();
+        for (id, countdown) in countdowns.iter_mut() {
+            let now = Instant::now();
+            countdown.sync_finished_at(now);
+            snapshots.push(CountdownSnapshot {
+                id: *id,
+                label: countdown.label().to_string(),
+                state: countdown.state(),
+                duration: countdown.remaining_at(now),
+                start_instant: countdown.start_timestamp(),
+                target_instant: countdown.target_timestamp(),
+            })
+        }
+        Ok(snapshots)
     }
 
-    pub async fn reset(&self) {
-        let mut countdown = self.countdown.lock().await;
-        countdown.reset()
+    pub async fn delete_countdown(&self, id: u64) -> Result<(), CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.reset();
+            countdowns.remove(&id);
+            Ok(())
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
     }
 
-    pub async fn resume(&self, now: Instant) -> Result<(), CountdownError> {
-        let mut countdown = self.countdown.lock().await;
-        countdown.resume(now)
+    pub async fn snapshot(
+        &self,
+        id: u64,
+        now: Instant,
+    ) -> Result<CountdownSnapshot, CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.sync_finished_at(now);
+            Ok(CountdownSnapshot {
+                id,
+                label: countdown.label().to_string(),
+                state: countdown.state(),
+                duration: countdown.remaining_at(now),
+                start_instant: countdown.start_timestamp(),
+                target_instant: countdown.target_timestamp(),
+            })
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
     }
 
-    pub async fn pause(&self, now: Instant) -> Result<(), CountdownError> {
-        let mut countdown = self.countdown.lock().await;
-        countdown.pause(now)
+    pub async fn start(&self, id: u64, now: Instant) -> Result<(), CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.start(now)
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
+    }
+
+    pub async fn reset(&self, id: u64) -> Result<(), CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.reset();
+            Ok(())
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
+    }
+
+    pub async fn resume(&self, id: u64, now: Instant) -> Result<(), CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.resume(now)
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
+    }
+
+    pub async fn pause(&self, id: u64, now: Instant) -> Result<(), CountdownError> {
+        let mut countdowns = self.countdowns.lock().await;
+        if let Some(countdown) = countdowns.get_mut(&id) {
+            countdown.pause(now)
+        } else {
+            Err(CountdownError::IdNotFound)
+        }
     }
 }

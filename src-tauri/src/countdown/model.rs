@@ -12,7 +12,6 @@ pub enum CountdownState {
 
 #[derive(Debug, Clone)]
 pub struct Countdown {
-    pub id: u64,
     pub label: String,
     initial_duration: Duration,
     remaining_duration_stored: Option<Duration>,
@@ -22,9 +21,8 @@ pub struct Countdown {
 }
 
 impl Countdown {
-    pub fn new(id: u64, label: impl Into<String>, duration: Duration) -> Self {
+    pub fn new(label: impl Into<String>, duration: Duration) -> Self {
         Self {
-            id,
             label: label.into(),
             initial_duration: duration,
             remaining_duration_stored: None,
@@ -34,20 +32,12 @@ impl Countdown {
         }
     }
 
-    pub fn id(&self) -> u64 {
-        self.id
-    }
-
     pub fn label(&self) -> &str {
         &self.label
     }
 
     pub fn state(&self) -> CountdownState {
         self.state
-    }
-
-    pub fn initial_duration(&self) -> Duration {
-        self.initial_duration
     }
 
     pub fn start_timestamp(&self) -> Option<Instant> {
@@ -70,10 +60,6 @@ impl Countdown {
                 .unwrap_or(self.initial_duration),
             CountdownState::Finished => Duration::from_secs(0),
         }
-    }
-
-    pub fn remaining(&self) -> Duration {
-        self.remaining_at(Instant::now())
     }
 
     pub fn is_finished(&self) -> bool {
@@ -181,7 +167,7 @@ mod tests {
     #[test]
     fn start_from_idle_enters_running() {
         let now = Instant::now();
-        let mut countdown = Countdown::new(1, "test", Duration::from_secs(10));
+        let mut countdown = Countdown::new("test", Duration::from_secs(10));
         countdown.start(now).expect("start should succeed");
 
         assert_eq!(countdown.state(), CountdownState::Running);
@@ -191,7 +177,7 @@ mod tests {
     #[test]
     fn pause_and_resume_preserve_remaining_time() {
         let now = Instant::now();
-        let mut countdown = Countdown::new(1, "test", Duration::from_secs(10));
+        let mut countdown = Countdown::new("test", Duration::from_secs(10));
         countdown.start(now).expect("start should succeed");
 
         let after_three_seconds = now.checked_add(Duration::from_secs(3)).unwrap();
@@ -217,7 +203,7 @@ mod tests {
     #[test]
     fn invalid_transition_returns_error() {
         let now = Instant::now();
-        let mut countdown = Countdown::new(1, "test", Duration::from_secs(5));
+        let mut countdown = Countdown::new("test", Duration::from_secs(5));
 
         let err = countdown
             .pause(now)
@@ -234,7 +220,7 @@ mod tests {
     #[test]
     fn running_countdown_reaches_finished() {
         let now = Instant::now();
-        let mut countdown = Countdown::new(1, "test", Duration::from_secs(2));
+        let mut countdown = Countdown::new("test", Duration::from_secs(2));
         countdown.start(now).expect("start should succeed");
 
         let after_two_seconds = now.checked_add(Duration::from_secs(2)).unwrap();

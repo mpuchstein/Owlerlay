@@ -36,7 +36,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             clock_anchor: ClockAnchor::new(),
-            countdown_service: CountdownService::default(),
+            countdown_service: CountdownService::new(),
         }
     }
 }

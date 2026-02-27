@@ -4,7 +4,8 @@ mod app_state;
 mod countdown;
 
 use crate::countdown::commands::{
-    countdown_pause, countdown_reset, countdown_resume, countdown_snapshot, countdown_start,
+    countdown_create, countdown_delete, countdown_list, countdown_pause, countdown_reset,
+    countdown_resume, countdown_snapshot, countdown_start,
 };
 pub use app_state::AppState;
 
@@ -15,6 +16,9 @@ pub fn run() {
         .manage(app_state)
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            countdown_create,
+            countdown_list,
+            countdown_delete,
             countdown_start,
             countdown_reset,
             countdown_pause,
