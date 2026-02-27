@@ -3,8 +3,8 @@ import {CountdownSnapshot} from "./types.ts";
 
 export type CountdownView = {
     onStart: (handler: () => void) => void;
-    onPause: (handler: () => void) => void;
     onResume: (handler: () => void) => void;
+    onPause: (handler: () => void) => void;
     onReset: (handler: () => void) => void;
     onRefresh: (handler: () => void) => void;
     setSnapshot: (snapshot: CountdownSnapshot) => void;
@@ -13,6 +13,8 @@ export type CountdownView = {
 
 function makeButton(label: string): HTMLButtonElement {
     const button = document.createElement("button");
+    button.id = "cd-btn-" + label.toLowerCase();
+    button.className = "countdown-btn"
     button.type = "button";
     button.textContent = label;
     return button;
@@ -29,12 +31,12 @@ export function createCountdownView(container: HTMLElement): CountdownView {
     actions.className = "countdown-actions";
 
     const startButton = makeButton("Start");
-    const pauseButton = makeButton("Pause");
     const resumeButton = makeButton("Resume");
+    const pauseButton = makeButton("Pause");
     const resetButton = makeButton("Reset");
     const refreshButton = makeButton("Refresh");
 
-    actions.append(startButton, pauseButton, resumeButton, resetButton, refreshButton);
+    actions.append(startButton, resumeButton, pauseButton, resetButton, refreshButton);
 
     const summary = document.createElement("p");
     summary.className = "countdown-summary";
@@ -53,11 +55,11 @@ export function createCountdownView(container: HTMLElement): CountdownView {
         onStart(handler) {
             startButton.addEventListener("click", handler);
         },
-        onPause(handler) {
-            pauseButton.addEventListener("click", handler);
-        },
         onResume(handler) {
             resumeButton.addEventListener("click", handler);
+        },
+        onPause(handler) {
+            pauseButton.addEventListener("click", handler);
         },
         onReset(handler) {
             resetButton.addEventListener("click", handler);
