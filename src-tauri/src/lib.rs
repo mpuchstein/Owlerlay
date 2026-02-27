@@ -21,8 +21,8 @@ pub fn run() {
             countdown_delete,
             countdown_start,
             countdown_reset,
-            countdown_pause,
             countdown_resume,
+            countdown_pause,
             countdown_snapshot,
         ])
         .run(tauri::generate_context!())

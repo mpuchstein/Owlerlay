@@ -17,3 +17,7 @@ export function millisToDuration(millis: number): Duration {
         millis: millis % 1000,
     }
 }
+
+export function durationToMillis(duration: Duration): number {
+    return duration.hours * 3600000 + duration.minutes * 60000 + duration.seconds * 1000 + duration.millis;
+}
