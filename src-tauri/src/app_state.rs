@@ -17,9 +17,11 @@ impl ClockAnchor {
     }
 
     pub fn instant_to_epoch_ms(&self, instant: tokio::time::Instant) -> u128 {
-        match instant.checked_duration_since(self.boot_instant) {
-            Some(duration) => duration.as_millis() + self.boot_epoch_ms,
-            None => return 0,
+        if let Some(delta) = instant.checked_duration_since(self.boot_instant) {
+            self.boot_epoch_ms + delta.as_millis()
+        } else {
+            let delta = self.boot_instant.duration_since(instant).as_millis();
+            self.boot_epoch_ms.saturating_sub(delta)
         }
     }
 }
