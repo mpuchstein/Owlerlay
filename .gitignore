@@ -56,3 +56,7 @@ TODO.md
 
 # dist folder
 dist/
+
+# bak folder
+_svelte_tmp
+src_bak

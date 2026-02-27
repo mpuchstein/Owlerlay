@@ -1,6 +1,9 @@
-import "./styles.css";
-import { initApp } from "./app/init";
+import { mount } from 'svelte'
+import './app.css'
+import App from './App.svelte'
 
-window.addEventListener("DOMContentLoaded", () => {
-  void initApp();
-});
+const app = mount(App, {
+  target: document.getElementById('app')!,
+})
+
+export default app
