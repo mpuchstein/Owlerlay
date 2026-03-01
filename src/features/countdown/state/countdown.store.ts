@@ -1,8 +1,14 @@
-//TODO: Implement countdown store
-
 import type {CountdownSnapshot} from "../model/countdown.types";
-import {writable} from "svelte/store";
-import {createCountdown, listCountdowns} from "../api/countdown.client";
+import {get, writable} from "svelte/store";
+import {
+    createCountdown,
+    deleteCountdown,
+    listCountdowns,
+    pauseCountdown,
+    resetCountdown,
+    resumeCountdown,
+    startCountdown
+} from "../api/countdown.client";
 import type {Duration} from "../../../shared/time/duration";
 
 
@@ -22,7 +28,7 @@ const initialStateStore: CountdownStateStore = {
     error: null,
 };
 
-const {subscribe} = writable(initialStateStore);
+const {subscribe, update} = writable(initialStateStore);
 
 function resolveSelected(items: CountdownSnapshot[], selectedId: number | null): CountdownSnapshot | null {
     return selectedId === null
@@ -30,49 +36,116 @@ function resolveSelected(items: CountdownSnapshot[], selectedId: number | null):
         : items.find((x) => x.id === selectedId) ?? null;
 }
 
-export function loadList() {
-    initialStateStore.loading = true;
-    listCountdowns().then((items) => {
-        initialStateStore.items = items;
-        initialStateStore.selectedId = initialStateStore.selectedId === null
-            ? (items.length > 0 ? items[0].id : null)
-            : initialStateStore.selectedId;
-        initialStateStore.selected = resolveSelected(items, initialStateStore.selectedId);
-        initialStateStore.loading = false;
-    });
+function getSelectedIdOrThrow(): number {
+    const selectedId = get(countdownStore).selectedId;
+    if (selectedId === null)
+        throw new Error("No selected countdown");
+    return selectedId;
 }
 
-export function select(id: number) {
-    initialStateStore.selectedId = id;
-    initialStateStore.selected = resolveSelected(initialStateStore.items, id);
+async function actionOnSelected(action: ((id: number) => Promise<void>)): Promise<void> {
+    update((state) => ({...state, loading: true, error: null}));
+    try {
+        const selectedId = getSelectedIdOrThrow();
+        await action(selectedId);
+        await loadList();
+    } catch (error) {
+        update((state) => {
+            const e_msg = error instanceof Error ? error.message : String(error);
+            return {...state, error: e_msg}
+        });
+    } finally {
+        update((state) => ({...state, loading: false}));
+    }
 }
 
-export function create(label: string, duration: Duration) {
-    createCountdown(label, duration).then((id) => {
-        loadList();
-        initialStateStore.selectedId = id;
-        initialStateStore.selected = resolveSelected(initialStateStore.items, id);
-    })
+export async function loadList() {
+    update((state) => ({...state, loading: true, error: null}));
+    try {
+        const items = await listCountdowns();
+        update((state) => ({...state, items}));
+    } catch (error) {
+        update((state) => {
+            const e_msg = error instanceof Error ? error.message : String(error);
+            return {...state, error: e_msg}
+        });
+    } finally {
+        update((state) => ({...state, loading: false}));
+    }
 }
 
-export function startSelected() {
-
+export async function select(id: number) {
+    update((state) => ({...state, loading: true, error: null}));
+    try {
+        await loadList();
+        update((state) => {
+            const selected = resolveSelected(state.items, id);
+            return {
+                ...state,
+                selectedId: id,
+                selected: selected,
+                error: selected === null ? "Selected countdown not found" : null
+            };
+        });
+    } catch (error) {
+        update((state) => {
+            const e_msg = error instanceof Error ? error.message : String(error);
+            return {...state, error: e_msg}
+        });
+    } finally {
+        update((state) => ({...state, loading: false}));
+    }
 }
 
-export function resumeSelected() {
-
+export async function create(label: string, duration: Duration) {
+    update((state) => ({...state, loading: true, error: null}));
+    try {
+        const nId = await createCountdown(label, duration);
+        await select(nId);
+    } catch (error) {
+        update((state) => {
+            const e_msg = error instanceof Error ? error.message : String(error);
+            return {...state, error: e_msg}
+        });
+    } finally {
+        update((state) => ({...state, loading: false}));
+    }
 }
 
-export function pauseSelected() {
-
+export async function deleteSelected() {
+    update((state) => ({...state, loading: true, error: null}));
+    try {
+        const selectedId = getSelectedIdOrThrow();
+        const items = get(countdownStore).items;
+        let nId = items.findIndex((x) => x.id === selectedId) - 1;
+        nId = nId < 0 ? 0 : nId == 0 ? 1 : 0;
+        nId = items[nId].id;
+        await deleteCountdown(selectedId);
+        await select(nId)
+    } catch (error) {
+        update((state) => {
+            const e_msg = error instanceof Error ? error.message : String(error);
+            return {...state, error: e_msg}
+        });
+    } finally {
+        update((state) => ({...state, loading: false}));
+    }
 }
 
-export function resetSelected() {
-
+export async function startSelected() {
+    await actionOnSelected(startCountdown);
 }
 
-export function deleteSelected() {
+export async function resumeSelected() {
+    await actionOnSelected(resumeCountdown);
+}
 
+export async function pauseSelected() {
+    await actionOnSelected(pauseCountdown);
+}
+
+export async function resetSelected() {
+    await actionOnSelected(resetCountdown);
 }
 
 export const countdownStore = {
