@@ -71,6 +71,7 @@ impl CountdownService {
                 target_instant: countdown.target_timestamp(),
             })
         }
+        snapshots.sort_by(|a, b| a.id.cmp(&b.id));
         Ok(snapshots)
     }
 
