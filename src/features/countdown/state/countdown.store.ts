@@ -14,7 +14,7 @@ type CountdownStateStore = {
     error: string | null;
 };
 
-const initalStateStore: CountdownStateStore = {
+const initialStateStore: CountdownStateStore = {
     items: [],
     selected: null,
     selectedId: null,
@@ -22,7 +22,7 @@ const initalStateStore: CountdownStateStore = {
     error: null,
 };
 
-const {subscribe} = writable(initalStateStore);
+const {subscribe} = writable(initialStateStore);
 
 function resolveSelected(items: CountdownSnapshot[], selectedId: number | null): CountdownSnapshot | null {
     return selectedId === null
@@ -31,27 +31,27 @@ function resolveSelected(items: CountdownSnapshot[], selectedId: number | null):
 }
 
 export function loadList() {
-    initalStateStore.loading = true;
+    initialStateStore.loading = true;
     listCountdowns().then((items) => {
-        initalStateStore.items = items;
-        initalStateStore.selectedId = initalStateStore.selectedId === null
+        initialStateStore.items = items;
+        initialStateStore.selectedId = initialStateStore.selectedId === null
             ? (items.length > 0 ? items[0].id : null)
-            : initalStateStore.selectedId;
-        initalStateStore.selected = resolveSelected(items, initalStateStore.selectedId);
-        initalStateStore.loading = false;
+            : initialStateStore.selectedId;
+        initialStateStore.selected = resolveSelected(items, initialStateStore.selectedId);
+        initialStateStore.loading = false;
     });
 }
 
 export function select(id: number) {
-    initalStateStore.selectedId = id;
-    initalStateStore.selected = resolveSelected(initalStateStore.items, id);
+    initialStateStore.selectedId = id;
+    initialStateStore.selected = resolveSelected(initialStateStore.items, id);
 }
 
 export function create(label: string, duration: Duration) {
     createCountdown(label, duration).then((id) => {
         loadList();
-        initalStateStore.selectedId = id;
-        initalStateStore.selected = resolveSelected(initalStateStore.items, id);
+        initialStateStore.selectedId = id;
+        initialStateStore.selected = resolveSelected(initialStateStore.items, id);
     })
 }
 
