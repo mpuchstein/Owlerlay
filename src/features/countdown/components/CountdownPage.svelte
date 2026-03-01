@@ -1,7 +1,7 @@
 <script lang="ts">
     import {onMount} from "svelte";
     import {countdownStore} from "../state/countdown.store";
-    import type {Duration} from "../../../shared/time/duration";
+    import {type Duration, formatDuration} from "../../../shared/time/duration";
 
     let label = "";
     let hours = 0;
@@ -45,6 +45,7 @@
 <button on:click={handleCreate}>Create</button>
 <br/>
 <label for="countdown-select">Select Countdown</label>
+<p>SelectedId: {$countdownStore.selectedId}</p>
 <select id="countdown-select"
         on:change={(e) => {countdownStore.select(Number(e.currentTarget.value))}}>
     {#each $countdownStore.items as item (item.id)}
@@ -53,7 +54,7 @@
 </select>
 <br/>
 {#if $countdownStore.selected}
-    <p>{$countdownStore.selected.duration}</p>
+    <p>Duration: {formatDuration($countdownStore.selected.duration)}</p>
     <p>{$countdownStore.selected.state}</p>
     <button on:click={() => {countdownStore.deleteSelected()}}>Delete</button>
     {#if $countdownStore.selected.state === "Idle"}
