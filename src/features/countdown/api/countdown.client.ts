@@ -61,8 +61,8 @@ export async function setOverlayConfig(
     const payload: OverlayConfigPayload = {
         id,
         icon,
-        text_color: textColor,
-        bg_color: bgColor,
+        textColor,
+        bgColor,
     };
     await invokeCommand<void>("set_overlay_config", payload);
 }

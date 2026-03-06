@@ -56,6 +56,6 @@ export type CountdownTickPayload = {
 export type OverlayConfigPayload = {
     id: number;
     icon: string;
-    text_color: string;
-    bg_color: string;
+    textColor: string;
+    bgColor: string;
 };
