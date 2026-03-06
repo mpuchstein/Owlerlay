@@ -22,6 +22,13 @@ pub async fn overlay_countdown(
     State(state): State<Arc<AppState>>,
     Query(q): Query<OverlayQuery>,
 ) -> Html<String> {
+    let css_version = tokio::fs::metadata("public/overlay.css")
+        .await
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
     let config = state
         .overlay_configs
         .lock()
@@ -51,6 +58,7 @@ pub async fn overlay_countdown(
             icon => config.icon,
             text_color => config.text_color,
             bg_color => config.bg_color,
+            css_version => css_version,
         })
         .unwrap();
     Html(html)
