@@ -176,6 +176,7 @@ pub async fn set_overlay_config(
     icon: String,
     text_color: String,
     bg_color: String,
+    show_hh_mm: bool,
 ) -> Result<(), String> {
     state
         .overlay_configs
@@ -187,6 +188,7 @@ pub async fn set_overlay_config(
                 icon,
                 text_color,
                 bg_color,
+                show_hh_mm,
             },
         );
     let _ = state.event_bus.send(AppEvent::ConfigChanged(id));

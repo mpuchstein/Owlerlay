@@ -57,12 +57,14 @@ export async function setOverlayConfig(
     icon: string,
     textColor: string,
     bgColor: string,
+    showHhMm: boolean,
 ): Promise<void> {
     const payload: OverlayConfigPayload = {
         id,
         icon,
         textColor,
         bgColor,
+        showHhMm,
     };
     await invokeCommand<void>("set_overlay_config", payload);
 }

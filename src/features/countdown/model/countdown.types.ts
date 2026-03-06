@@ -58,4 +58,5 @@ export type OverlayConfigPayload = {
     icon: string;
     textColor: string;
     bgColor: string;
+    showHhMm: boolean;
 };

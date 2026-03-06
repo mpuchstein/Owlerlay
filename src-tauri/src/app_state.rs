@@ -35,6 +35,7 @@ pub struct OverlayConfig {
     pub icon: String,
     pub text_color: String,
     pub bg_color: String,
+    pub show_hh_mm: bool,
 }
 
 impl Default for OverlayConfig {
@@ -43,6 +44,7 @@ impl Default for OverlayConfig {
             icon: String::new(),
             text_color: "white".to_string(),
             bg_color: "transparent".to_string(),
+            show_hh_mm: false,
         }
     }
 }

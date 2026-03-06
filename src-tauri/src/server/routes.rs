@@ -22,12 +22,6 @@ pub async fn overlay_countdown(
     State(state): State<Arc<AppState>>,
     Query(q): Query<OverlayQuery>,
 ) -> Html<String> {
-    let remaining = build_snapshot_dtos(&state)
-        .await
-        .ok()
-        .and_then(|snaps| snaps.into_iter().find(|s| s.id == q.id))
-        .map(|s| format_remaining(s.duration as u64))
-        .unwrap_or_else(|| "??:??:??.???".to_string());
     let config = state
         .overlay_configs
         .lock()
@@ -35,6 +29,12 @@ pub async fn overlay_countdown(
         .get(&q.id)
         .cloned()
         .unwrap_or_default();
+    let remaining = build_snapshot_dtos(&state)
+        .await
+        .ok()
+        .and_then(|snaps| snaps.into_iter().find(|s| s.id == q.id))
+        .map(|s| format_remaining(s.duration as u64, config.show_hh_mm))
+        .unwrap_or_else(|| format_unknown(config.show_hh_mm));
 
     let mut env = minijinja::Environment::new();
     env.add_template(
@@ -60,15 +60,22 @@ pub async fn sse_countdown(
     State(state): State<Arc<AppState>>,
     Path(id): Path<u64>,
 ) -> Sse<impl futures_core::Stream<Item = Result<Event, axum::Error>>> {
+    let show_hh_mm = state
+        .overlay_configs
+        .lock()
+        .await
+        .get(&id)
+        .map(|cfg| cfg.show_hh_mm)
+        .unwrap_or(false);
     let rx = state.event_bus.subscribe();
     let stream = BroadcastStream::new(rx).filter_map(move |event| match event {
         Ok(AppEvent::Tick(p)) if p.id == id => Some(Ok(Event::default()
             .event("tick")
-            .data(format_remaining(p.remaining_ms)))),
+            .data(format_remaining(p.remaining_ms, show_hh_mm)))),
         Ok(AppEvent::Changed(snaps)) => snaps.iter().find(|s| s.id == id).map(|s| {
             Ok(Event::default()
                 .event("tick")
-                .data(format_remaining(s.duration as u64)))
+                .data(format_remaining(s.duration as u64, show_hh_mm)))
         }),
         Ok(AppEvent::ConfigChanged(cid)) if cid == id => {
             Some(Ok(Event::default().event("reload").data("")))
@@ -82,12 +89,23 @@ pub async fn sse_countdown(
     )
 }
 
-fn format_remaining(ms: u64) -> String {
+fn format_remaining(ms: u64, show_hh_mm: bool) -> String {
+    let total_seconds = ms / 1_000;
+    if !show_hh_mm {
+        return total_seconds.to_string();
+    }
     let h = ms / 3_600_000;
     let m = (ms % 3_600_000) / 60_000;
     let s = (ms % 60_000) / 1_000;
-    let millis = ms % 1_000;
-    format!("{:02}:{:02}:{:02}.{:03}", h, m, s, millis)
+    format!("{:02}:{:02}:{:02}", h, m, s)
+}
+
+fn format_unknown(show_hh_mm: bool) -> String {
+    if show_hh_mm {
+        "??:??:??".to_string()
+    } else {
+        "??".to_string()
+    }
 }
 
 pub async fn list_icons() -> Json<Vec<String>> {

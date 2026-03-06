@@ -11,6 +11,7 @@
         textColor: string;
         bgColor: string;
         bgTransparent: boolean;
+        showHHMM: boolean;
     };
 
     let label = "";
@@ -39,6 +40,7 @@
                     textColor: "#ffffff",
                     bgColor: "#000000",
                     bgTransparent: true,
+                    showHHMM: false,
                 },
             };
         }
@@ -57,7 +59,13 @@
 
     function pushConfig(id: number) {
         const s = getSettings(id);
-        void setOverlayConfig(id, s.icon, s.textColor, s.bgTransparent ? "transparent" : s.bgColor);
+        void setOverlayConfig(
+            id,
+            s.icon,
+            s.textColor,
+            s.bgTransparent ? "transparent" : s.bgColor,
+            s.showHHMM,
+        ).catch((error) => console.error(error));
     }
 
     async function copyUrl(id: number) {
@@ -93,7 +101,7 @@
         <input aria-label="Hours" bind:value={hours} max="99" min="0" placeholder="hh" type="number"/>
         <input aria-label="Minutes" bind:value={minutes} max="59" min="0" placeholder="mm" type="number"/>
         <input aria-label="Seconds" bind:value={seconds} max="59" min="0" placeholder="ss" type="number"/>
-        <button on:click={handleCreate}>Create</button>
+        <button type="button" on:click={handleCreate}>Create</button>
     </fieldset>
 </article>
 
@@ -103,9 +111,9 @@
             <summary>
                 {#if getSettings(item.id).icon}
                     <img
-                        src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${getSettings(item.id).icon}`}
-                        alt={getSettings(item.id).icon}
-                        style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:0.3em;"
+                            src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${getSettings(item.id).icon}`}
+                            alt={getSettings(item.id).icon}
+                            style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:0.3em;"
                     />
                 {/if}
                 {item.label}
@@ -122,34 +130,43 @@
 
             <div class="countdown-actions">
                 {#if item.state === "Idle"}
-                    <button on:click={() => selectAndRun(item.id, countdownStore.startSelected)}>Start</button>
+                    <button type="button" on:click={() => selectAndRun(item.id, countdownStore.startSelected)}>Start
+                    </button>
                 {:else if item.state === "Running"}
-                    <button on:click={() => selectAndRun(item.id, countdownStore.pauseSelected)}>Pause</button>
+                    <button type="button" on:click={() => selectAndRun(item.id, countdownStore.pauseSelected)}>Pause
+                    </button>
                 {:else if item.state === "Paused"}
-                    <button on:click={() => selectAndRun(item.id, countdownStore.resumeSelected)}>Resume</button>
+                    <button type="button" on:click={() => selectAndRun(item.id, countdownStore.resumeSelected)}>Resume
+                    </button>
                 {/if}
-                <button class="secondary" on:click={() => selectAndRun(item.id, countdownStore.resetSelected)}>Reset</button>
-                <button class="secondary contrast" on:click={() => selectAndRun(item.id, countdownStore.deleteSelected)}>Delete</button>
+                <button type="button" class="secondary"
+                        on:click={() => selectAndRun(item.id, countdownStore.resetSelected)}>Reset
+                </button>
+                <button type="button" class="secondary contrast"
+                        on:click={() => selectAndRun(item.id, countdownStore.deleteSelected)}>Delete
+                </button>
             </div>
 
-            <hr />
+            <hr/>
 
             <p><small>Icon</small></p>
             <div class="icon-picker">
                 {#each icons as name}
                     <button
-                        class="icon-btn {getSettings(item.id).icon === name ? 'selected' : ''}"
-                        on:click={() => {
+                            type="button"
+                            class="icon-btn {getSettings(item.id).icon === name ? 'selected' : ''}"
+                            on:click|stopPropagation|preventDefault={() => {
                             updateSettings(item.id, {icon: name});
                             pushConfig(item.id);
                         }}
                     >
-                        <img src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${name}`} alt={name} />
+                        <img src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${name}`} alt={name}/>
                     </button>
                 {/each}
                 <button
-                    class="icon-btn"
-                    on:click={() => {
+                        type="button"
+                        class="icon-btn"
+                        on:click|stopPropagation|preventDefault={() => {
                         updateSettings(item.id, {icon: ''});
                         pushConfig(item.id);
                     }}
@@ -162,9 +179,9 @@
                 <label>
                     Text
                     <input
-                        type="color"
-                        value={getSettings(item.id).textColor}
-                        on:change={(e) => {
+                            type="color"
+                            value={getSettings(item.id).textColor}
+                            on:change={(e) => {
                             updateSettings(item.id, {textColor: e.currentTarget.value});
                             pushConfig(item.id);
                         }}
@@ -172,9 +189,9 @@
                 </label>
                 <label>
                     <input
-                        type="checkbox"
-                        checked={getSettings(item.id).bgTransparent}
-                        on:change={(e) => {
+                            type="checkbox"
+                            checked={getSettings(item.id).bgTransparent}
+                            on:change={(e) => {
                             updateSettings(item.id, {bgTransparent: e.currentTarget.checked});
                             pushConfig(item.id);
                         }}
@@ -185,20 +202,33 @@
                     <label>
                         BG
                         <input
-                            type="color"
-                            value={getSettings(item.id).bgColor}
-                            on:change={(e) => {
+                                type="color"
+                                value={getSettings(item.id).bgColor}
+                                on:change={(e) => {
                                 updateSettings(item.id, {bgColor: e.currentTarget.value});
                                 pushConfig(item.id);
                             }}
                         />
                     </label>
                 {/if}
+                <br/>
             </div>
-
+            <div>
+                <label>
+                    <input
+                            type="checkbox"
+                            checked={getSettings(item.id).showHHMM}
+                            on:change={(e) => {
+                            updateSettings(item.id, {showHHMM: e.currentTarget.checked});
+                            pushConfig(item.id);
+                        }}
+                    />
+                    Show HH:MM
+                </label>
+            </div>
             <div class="source-url">
-                <input readonly value={`${OVERLAY_SERVER_ORIGIN}/overlay/countdown?id=${item.id}`} />
-                <button class="secondary" on:click={() => copyUrl(item.id)}>Copy</button>
+                <input readonly value={`${OVERLAY_SERVER_ORIGIN}/overlay/countdown?id=${item.id}`}/>
+                <button type="button" class="secondary" on:click={() => copyUrl(item.id)}>Copy</button>
             </div>
         </details>
     </article>
