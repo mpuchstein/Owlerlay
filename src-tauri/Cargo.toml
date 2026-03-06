@@ -31,3 +31,5 @@ tower-http = { version = "0.6.8", features = ["fs", "cors"] }
 minijinja = "2.15.1"
 toml = "1.0.3"
 chrono = "0.4.43"
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures-core = "0.3"

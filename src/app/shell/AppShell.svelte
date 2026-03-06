@@ -6,20 +6,23 @@
     let activePage: pages = "countdowns";
 
 </script>
-<header>
-    <h1>Owlerlay</h1>
+
+<header class="container-fluid">
+    <nav>
+        <ul>
+            <li><strong>Owlerlay</strong></li>
+        </ul>
+        <ul>
+            <li><a href="#" on:click|preventDefault={() => activePage = "countdowns"}>Countdowns</a></li>
+            <li><a href="#" on:click|preventDefault={() => activePage = "about"}>About</a></li>
+        </ul>
+    </nav>
 </header>
-<nav>
-    <button on:click={() => activePage = "countdowns"}>Countdowns</button>
-    <button on:click={() => activePage = "about"}>About</button>
-</nav>
-<br/>
-<main>
+
+<main class="container">
     {#if activePage === "countdowns"}
         <CountdownPage/>
     {:else if activePage === "about"}
-        <slot name="about"/>
-    {:else}
-        <slot name="countdowns"/>
+        <p>Owlerlay — OBS overlay control center.</p>
     {/if}
 </main>

@@ -1,10 +1,22 @@
+.timer-display {
+    font-size: 2.5rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    margin: 0.5rem 0 1rem;
+}
+
 .countdown-actions {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .countdown-error {
-    min-height: 1.25rem;
-    color: #b00020;
+    color: var(--pico-color-red-500, #b00020);
     margin: 0.25rem 0;
 }
+
+mark[data-state="Running"]  { color: var(--pico-color-jade-500,  #29a16a); }
+mark[data-state="Paused"]   { color: var(--pico-color-amber-500, #929200); }
+mark[data-state="Finished"] { color: var(--pico-color-red-500,   #b00020); }
+mark[data-state="Idle"]     { color: var(--pico-color-zinc-400,  #666666); }

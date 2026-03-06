@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="/static/overlay.css" rel="stylesheet">
+</head>
+<body>
+<div id="timer">{{ remaining }}</div>
+<script>
+    const es = new EventSource('/sse/countdown/{{ id }}');
+    es.addEventListener('tick', e => {
+        document.getElementById('timer').textContent = e.data;
+    });
+    es.onerror = () => setTimeout(() => location.reload(), 3000);
+</script>
+</body>
+</html>

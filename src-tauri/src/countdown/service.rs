@@ -22,6 +22,11 @@ pub struct CountdownSnapshot {
     pub target_instant: Option<Instant>,
 }
 
+pub struct TickResult {
+    pub still_running: Vec<(u64, String, Duration)>,
+    pub newly_finished: Vec<u64>,
+}
+
 impl CountdownService {
     pub fn new() -> Self {
         Self {
@@ -142,5 +147,22 @@ impl CountdownService {
         } else {
             Err(CountdownError::IdNotFound)
         }
+    }
+
+    pub async fn tick(&self, now: Instant) -> TickResult {
+        let mut countdowns = self.countdowns.lock().await;
+        let mut still_running = vec![];
+        let mut newly_finished = vec![];
+        for (id, countdown) in countdowns.iter_mut() {
+            if countdown.state() == CountdownState::Running {
+                countdown.sync_finished_at(now);
+                if countdown.is_finished() {
+                    newly_finished.push(*id);
+                } else {
+                    still_running.push((*id, countdown.label().to_string(), countdown.remaining_at(now)));
+                }
+            }
+        }
+        TickResult { still_running, newly_finished }
     }
 }

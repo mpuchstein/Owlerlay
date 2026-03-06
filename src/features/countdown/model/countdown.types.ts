@@ -41,3 +41,9 @@ export type CountdownCreatePayload = {
     label: string;
     duration: number;
 }
+
+export type CountdownTickPayload = {
+    id: number;
+    label: string;
+    remaining_ms: number;
+};

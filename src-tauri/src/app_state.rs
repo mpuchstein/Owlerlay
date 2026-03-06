@@ -1,4 +1,7 @@
+use crate::countdown::events::AppEvent;
 use crate::countdown::service::CountdownService;
+use tokio::sync::broadcast;
+
 #[derive(Clone, Debug)]
 pub struct ClockAnchor {
     pub boot_instant: tokio::time::Instant,
@@ -25,18 +28,20 @@ impl ClockAnchor {
         }
     }
 }
-//TODO: implement the handling of multiple countdowns
 #[derive(Debug)]
 pub struct AppState {
     pub clock_anchor: ClockAnchor,
     pub countdown_service: CountdownService,
+    pub event_bus: broadcast::Sender<AppEvent>,
 }
 
 impl AppState {
     pub fn new() -> Self {
+        let (event_bus, _) = broadcast::channel(64);
         Self {
             clock_anchor: ClockAnchor::new(),
             countdown_service: CountdownService::new(),
+            event_bus,
         }
     }
 }

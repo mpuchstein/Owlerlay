@@ -2444,6 +2444,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "chrono",
+ "futures-core",
  "minijinja",
  "serde",
  "serde_json",
@@ -2452,6 +2453,7 @@ dependencies = [
  "tauri-plugin-opener",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-stream",
  "toml 1.0.3+spec-1.1.0",
  "tower-http",
  "tracing",
@@ -4036,6 +4038,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32da49809aab5c3bc678af03902d4ccddea2a87d028d86392a4b1560c6906c70"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
