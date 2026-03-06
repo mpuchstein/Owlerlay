@@ -98,106 +98,108 @@
 </article>
 
 {#each $countdownStore.items as item (item.id)}
-    <details on:toggle={(e) => (e.currentTarget as HTMLDetailsElement).open && countdownStore.select(item.id)}>
-        <summary>
-            {#if getSettings(item.id).icon}
-                <img
-                    src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${getSettings(item.id).icon}`}
-                    alt={getSettings(item.id).icon}
-                    style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:0.3em;"
-                />
-            {/if}
-            {item.label}
-            <mark data-state={item.state}>{item.state}</mark>
-        </summary>
+    <article class="countdown-item-card">
+        <details on:toggle={(e) => (e.currentTarget as HTMLDetailsElement).open && countdownStore.select(item.id)}>
+            <summary>
+                {#if getSettings(item.id).icon}
+                    <img
+                        src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${getSettings(item.id).icon}`}
+                        alt={getSettings(item.id).icon}
+                        style="width:1.2em;height:1.2em;vertical-align:middle;margin-right:0.3em;"
+                    />
+                {/if}
+                {item.label}
+                <mark data-state={item.state}>{item.state}</mark>
+            </summary>
 
-        <p class="timer-display">
-            {#if $countdownStore.selectedId === item.id && $countdownStore.liveRemaining}
-                {formatDuration($countdownStore.liveRemaining)}
-            {:else}
-                {formatDuration(item.duration)}
-            {/if}
-        </p>
+            <p class="timer-display">
+                {#if $countdownStore.selectedId === item.id && $countdownStore.liveRemaining}
+                    {formatDuration($countdownStore.liveRemaining)}
+                {:else}
+                    {formatDuration(item.duration)}
+                {/if}
+            </p>
 
-        <div class="countdown-actions">
-            {#if item.state === "Idle"}
-                <button on:click={() => selectAndRun(item.id, countdownStore.startSelected)}>Start</button>
-            {:else if item.state === "Running"}
-                <button on:click={() => selectAndRun(item.id, countdownStore.pauseSelected)}>Pause</button>
-            {:else if item.state === "Paused"}
-                <button on:click={() => selectAndRun(item.id, countdownStore.resumeSelected)}>Resume</button>
-            {/if}
-            <button class="secondary" on:click={() => selectAndRun(item.id, countdownStore.resetSelected)}>Reset</button>
-            <button class="secondary contrast" on:click={() => selectAndRun(item.id, countdownStore.deleteSelected)}>Delete</button>
-        </div>
+            <div class="countdown-actions">
+                {#if item.state === "Idle"}
+                    <button on:click={() => selectAndRun(item.id, countdownStore.startSelected)}>Start</button>
+                {:else if item.state === "Running"}
+                    <button on:click={() => selectAndRun(item.id, countdownStore.pauseSelected)}>Pause</button>
+                {:else if item.state === "Paused"}
+                    <button on:click={() => selectAndRun(item.id, countdownStore.resumeSelected)}>Resume</button>
+                {/if}
+                <button class="secondary" on:click={() => selectAndRun(item.id, countdownStore.resetSelected)}>Reset</button>
+                <button class="secondary contrast" on:click={() => selectAndRun(item.id, countdownStore.deleteSelected)}>Delete</button>
+            </div>
 
-        <hr />
+            <hr />
 
-        <p><small>Icon</small></p>
-        <div class="icon-picker">
-            {#each icons as name}
+            <p><small>Icon</small></p>
+            <div class="icon-picker">
+                {#each icons as name}
+                    <button
+                        class="icon-btn {getSettings(item.id).icon === name ? 'selected' : ''}"
+                        on:click={() => {
+                            updateSettings(item.id, {icon: name});
+                            pushConfig(item.id);
+                        }}
+                    >
+                        <img src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${name}`} alt={name} />
+                    </button>
+                {/each}
                 <button
-                    class="icon-btn {getSettings(item.id).icon === name ? 'selected' : ''}"
+                    class="icon-btn"
                     on:click={() => {
-                        updateSettings(item.id, {icon: name});
+                        updateSettings(item.id, {icon: ''});
                         pushConfig(item.id);
                     }}
                 >
-                    <img src={`${OVERLAY_SERVER_ORIGIN}/static/icons/${name}`} alt={name} />
+                    ✕
                 </button>
-            {/each}
-            <button
-                class="icon-btn"
-                on:click={() => {
-                    updateSettings(item.id, {icon: ''});
-                    pushConfig(item.id);
-                }}
-            >
-                ✕
-            </button>
-        </div>
+            </div>
 
-        <div class="overlay-colors">
-            <label>
-                Text
-                <input
-                    type="color"
-                    value={getSettings(item.id).textColor}
-                    on:change={(e) => {
-                        updateSettings(item.id, {textColor: e.currentTarget.value});
-                        pushConfig(item.id);
-                    }}
-                />
-            </label>
-            <label>
-                <input
-                    type="checkbox"
-                    checked={getSettings(item.id).bgTransparent}
-                    on:change={(e) => {
-                        updateSettings(item.id, {bgTransparent: e.currentTarget.checked});
-                        pushConfig(item.id);
-                    }}
-                />
-                Transparent BG
-            </label>
-            {#if !getSettings(item.id).bgTransparent}
+            <div class="overlay-colors">
                 <label>
-                    BG
+                    Text
                     <input
                         type="color"
-                        value={getSettings(item.id).bgColor}
+                        value={getSettings(item.id).textColor}
                         on:change={(e) => {
-                            updateSettings(item.id, {bgColor: e.currentTarget.value});
+                            updateSettings(item.id, {textColor: e.currentTarget.value});
                             pushConfig(item.id);
                         }}
                     />
                 </label>
-            {/if}
-        </div>
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={getSettings(item.id).bgTransparent}
+                        on:change={(e) => {
+                            updateSettings(item.id, {bgTransparent: e.currentTarget.checked});
+                            pushConfig(item.id);
+                        }}
+                    />
+                    Transparent BG
+                </label>
+                {#if !getSettings(item.id).bgTransparent}
+                    <label>
+                        BG
+                        <input
+                            type="color"
+                            value={getSettings(item.id).bgColor}
+                            on:change={(e) => {
+                                updateSettings(item.id, {bgColor: e.currentTarget.value});
+                                pushConfig(item.id);
+                            }}
+                        />
+                    </label>
+                {/if}
+            </div>
 
-        <div class="source-url">
-            <input readonly value={`${OVERLAY_SERVER_ORIGIN}/overlay/countdown?id=${item.id}`} />
-            <button class="secondary" on:click={() => copyUrl(item.id)}>Copy</button>
-        </div>
-    </details>
+            <div class="source-url">
+                <input readonly value={`${OVERLAY_SERVER_ORIGIN}/overlay/countdown?id=${item.id}`} />
+                <button class="secondary" on:click={() => copyUrl(item.id)}>Copy</button>
+            </div>
+        </details>
+    </article>
 {/each}

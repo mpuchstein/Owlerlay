@@ -21,8 +21,12 @@ mark[data-state="Paused"]   { color: var(--pico-color-amber-500, #929200); }
 mark[data-state="Finished"] { color: var(--pico-color-red-500,   #b00020); }
 mark[data-state="Idle"]     { color: var(--pico-color-zinc-400,  #666666); }
 
-details {
+.countdown-item-card {
     margin-bottom: 0.75rem;
+}
+
+.countdown-item-card details {
+    margin-bottom: 0;
 }
 
 summary mark {
