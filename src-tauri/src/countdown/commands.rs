@@ -169,6 +169,30 @@ pub async fn countdown_snapshot(
     })
 }
 
+#[command]
+pub async fn set_overlay_config(
+    state: State<'_, Arc<AppState>>,
+    id: u64,
+    icon: String,
+    text_color: String,
+    bg_color: String,
+) -> Result<(), String> {
+    state
+        .overlay_configs
+        .lock()
+        .await
+        .insert(
+            id,
+            crate::app_state::OverlayConfig {
+                icon,
+                text_color,
+                bg_color,
+            },
+        );
+    let _ = state.event_bus.send(AppEvent::ConfigChanged(id));
+    Ok(())
+}
+
 pub(crate) fn spawn_ticker(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(100));

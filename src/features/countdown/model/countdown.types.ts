@@ -29,9 +29,14 @@ export type CountdownCommand =
     | "countdown_pause"
     | "countdown_resume"
     | "countdown_reset"
-    | "countdown_snapshot";
+    | "countdown_snapshot"
+    | "set_overlay_config";
 
-export type CountdownPayload = EmptyPayload | CountdownIdPayload | CountdownCreatePayload;
+export type CountdownPayload =
+    | EmptyPayload
+    | CountdownIdPayload
+    | CountdownCreatePayload
+    | OverlayConfigPayload;
 
 export type CountdownIdPayload = {
     id: number;
@@ -46,4 +51,11 @@ export type CountdownTickPayload = {
     id: number;
     label: string;
     remaining_ms: number;
+};
+
+export type OverlayConfigPayload = {
+    id: number;
+    icon: string;
+    text_color: string;
+    bg_color: string;
 };

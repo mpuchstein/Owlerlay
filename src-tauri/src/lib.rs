@@ -9,7 +9,7 @@ use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::countdown::commands::{
     countdown_create, countdown_delete, countdown_list, countdown_pause, countdown_reset,
-    countdown_resume, countdown_snapshot, countdown_start, spawn_ticker,
+    countdown_resume, countdown_snapshot, countdown_start, set_overlay_config, spawn_ticker,
 };
 use tauri::Manager;
 
@@ -29,6 +29,7 @@ pub fn run() {
             countdown_resume,
             countdown_pause,
             countdown_snapshot,
+            set_overlay_config,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

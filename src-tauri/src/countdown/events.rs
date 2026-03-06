@@ -13,4 +13,5 @@ pub struct CountdownTickPayload {
 pub enum AppEvent {
     Tick(CountdownTickPayload),
     Changed(Vec<CountdownSnapshotDto>),
+    ConfigChanged(u64),
 }

@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <link href="/static/overlay.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/static/overlay.css">
+  <style>
+    body { background-color: {{ bg_color }}; }
+    #timer { color: {{ text_color }}; }
+    #icon { width: 3rem; height: 3rem; vertical-align: middle; margin-right: 0.5rem; }
+  </style>
 </head>
 <body>
-<div id="timer">{{ remaining }}</div>
-<script>
+  <div id="display">
+    {% if icon %}<img id="icon" src="/static/icons/{{ icon }}" />{% endif %}
+    <span id="timer">{{ remaining }}</span>
+  </div>
+  <script>
     const es = new EventSource('/sse/countdown/{{ id }}');
-    es.addEventListener('tick', e => {
-        document.getElementById('timer').textContent = e.data;
-    });
+    es.addEventListener('tick', e => { document.getElementById('timer').textContent = e.data; });
+    es.addEventListener('reload', () => location.reload());
     es.onerror = () => setTimeout(() => location.reload(), 3000);
-</script>
+  </script>
 </body>
 </html>
