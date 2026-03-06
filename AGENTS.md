@@ -1,13 +1,28 @@
 # Repository Guidelines
 
+## Project Overview
+**Owlerlay** is a Tauri-based **OBS overlay control center**. It is not a simple countdown timer — the countdown feature is just one of several planned core features.
+
+**Goals:**
+- Act as a control center for OBS browser-source overlays (rendered via HTMX + CSS, minimal JS)
+- Low resource consumption, cross-platform support
+- Extensible via a plugin system
+
+**Planned core features:** alarms, twitch chat integration, countdowns (timers), alerts, and more.
+
+**Overlay rendering approach:** HTMX + CSS templates served to OBS browser sources; JavaScript kept to an absolute minimum.
+
+---
+
 ## Learning-First Collaboration Rules
 This is a learning project. The assistant is a guide, not an implementer.
 
-- The developer writes all application code and tests.
-- The assistant must not write or modify project source code (for example `src/` or `src-tauri/src/`).
+- The developer writes all application code.
+- The assistant **may** write test files (Rust integration tests, Vitest specs, etc.) when asked.
+- The assistant must not write or modify project source code (for example `src/` or `src-tauri/src/`), **except** for test files.
 - The assistant may provide step-by-step guidance, debugging help, reviews, architecture feedback, and hints.
 - The assistant may edit documentation files when explicitly requested.
-- If asked to implement code, the assistant should refuse and provide a clear plan the developer can execute.
+- If asked to implement non-test code, the assistant should refuse and provide a clear plan the developer can execute.
 - If asked about a file, function, module, or crate, the assistant must read the current code first before answering.
 - Reviews and guidance must be based strictly on the current file contents, not earlier snapshots.
 - Before each technical answer, the assistant must re-open the relevant files/outputs and verify against current on-disk state, never relying on memory from earlier turns.
@@ -43,6 +58,11 @@ No automated JS test framework is currently configured. For new features:
 - add Rust unit tests near command logic (`#[cfg(test)]` in `src-tauri/src/`), and
 - add frontend tests only when introducing non-trivial UI/state behavior (Vitest is the preferred choice if added).
 - include manual verification steps in PRs (OS, command run, expected behavior).
+
+The assistant **is allowed to write test files** when asked. Tests must live in dedicated files, **separate from source code**:
+- Rust tests: `src-tauri/tests/` (integration tests using the public API of each module)
+- Frontend tests: `src/tests/` or a top-level `tests/` directory (Vitest specs)
+- Do **not** add `#[cfg(test)]` blocks inside `src-tauri/src/` files — keep source and test code in separate files.
 
 ## Commit & Pull Request Guidelines
 Git history is not available in this workspace snapshot, so use Conventional Commit style:
