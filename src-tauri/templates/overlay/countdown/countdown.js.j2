@@ -1,0 +1,14 @@
+const hideIdle = {{ hide_idle | lower }};
+const es = new EventSource('/sse/group/{{ id }}');
+es.addEventListener('countdown-tick', e => {
+  const {id, remaining} = JSON.parse(e.data);
+  document.getElementById('timer-' + id).textContent = remaining;
+});
+es.addEventListener('countdown-state', e => {
+  const {id, state} = JSON.parse(e.data);
+  if (hideIdle) {
+    document.getElementById('countdown-' + id).style.display = state === 'Idle' ? 'none' : '';
+  }
+});
+es.addEventListener('reload', () => location.reload());
+es.onerror = () => setTimeout(() => location.reload(), 3000);

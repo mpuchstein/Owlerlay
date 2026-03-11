@@ -1,10 +1,18 @@
 <div class="countdown-list {{ layout }}">
   {% for c in countdowns %}
-    <div id="countdown-{{ c.id }}" class="countdown-item{% if hide_idle and c.state == 'Idle' %} hidden{% endif %}">
-      {% if c.icon %}<img ...>{% endif %}
-        <span id="timer-{{ c.id }}" style="font-size:{{ c.font_size }}rem; color:{{ c.text_color }}">
-          {{ c.remaining }}
-        </span>
+    <div
+      id="countdown-{{ c.id }}"
+      class="countdown-item{% if hide_idle and c.state == 'Idle' %}hidden{% endif %}"
+    >
+      {% if c.icon %}
+        <img id="icon-{{ c.id }}" src="{{ c.icon }}" alt="{{ c.name }}" />
+      {% endif %}
+      <span
+        id="timer-{{ c.id }}"
+        style="font-size:{{ c.font_size }}rem; color:{{ c.text_color }}"
+      >
+        {{ c.remaining }}
+      </span>
     </div>
   {% endfor %}
 </div>
