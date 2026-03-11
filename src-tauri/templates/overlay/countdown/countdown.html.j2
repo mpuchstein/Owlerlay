@@ -2,10 +2,15 @@
   {% for c in countdowns %}
     <div
       id="countdown-{{ c.id }}"
-      class="countdown-item{% if hide_idle and c.state == 'Idle' %}hidden{% endif %}"
+      class="countdown-item"
+      data-hidden="{{ hide_idle and c.state == 'Idle' }}"
     >
       {% if c.icon %}
-        <img id="icon-{{ c.id }}" src="{{ c.icon }}" alt="{{ c.name }}" />
+        <img
+          id="icon-{{ c.id }}"
+          src="/static/icons/{{ c.icon }}"
+          alt="{{ c.name }}"
+        />
       {% endif %}
       <span
         id="timer-{{ c.id }}"
