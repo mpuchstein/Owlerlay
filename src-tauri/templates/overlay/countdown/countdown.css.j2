@@ -1,22 +1,19 @@
-.countdown-item {
-  display: flex;
-}
-.countdown-list.vertical {
-  flex-direction: column;
-}
-.countdown-list.horizontal {
-  flex-direction: row;
-}
-.countdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-}
 .countdown-item[data-hidden="true"] {
     display: none;
 }
-{% for c in countdowns %}
+#countdown-{{ c.id }}{
+    background-color: {{ c.background }};
+    border: {{ c.border }};
+    border-radius: {{ c.border_radius }}px;
+    padding: 1rem 2rem;
+    {% if c.backdrop_filter %}
+    backdrop-filter: blur(8px);
+    {% endif %}
+    {% if c.box_shadow %}
+    box-shadow: {{ c.box_shadow }};
+    {% endif %}
+}
+
 #timer-{{ c.id }} {
   font-size: {{ c.font_size }}rem;
   font-family: monospace;
@@ -29,4 +26,3 @@
   vertical-align: middle;
   margin-right: 0.5rem;
 }
-{% endfor %}

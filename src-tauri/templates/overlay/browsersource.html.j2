@@ -12,7 +12,9 @@
   </style>
   </head>
   <body>
-  {{ content }}
+      <div id="group" style="display: flex; flex-direction: {{ layout }};">
+        {{ content }}
+    </div>
   <script>
       {{ script }}
   </script>

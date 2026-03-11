@@ -1,13 +1,20 @@
 const hideIdle = {{ hide_idle | lower }};
 const es = new EventSource('/sse/group/{{ id }}');
 es.addEventListener('countdown-tick', e => {
-  const {id, remaining} = JSON.parse(e.data);
-  document.getElementById('timer-' + id).textContent = remaining;
+  const {id, remaining, percent} = JSON.parse(e.data);
+  const timer = document.getElementById('timer-' + id);
+  if(timer){
+    timer.textContent = remaining;
+  }
+  const progressInner = document.getElementById('progress-inner-' + id);
+  if(progressInner){
+    progressInner.style.width = percent + '%';
+  }
 });
 es.addEventListener('countdown-state', e => {
   const {id, state} = JSON.parse(e.data);
   if (hideIdle) {
-    document.getElementById('countdown-' + id).style.display = state === 'Idle' ? 'none' : '';
+    document.getElementById('countdown-' + id).dataset.hidden = state === 'Idle';
   }
 });
 es.addEventListener('reload', () => location.reload());
