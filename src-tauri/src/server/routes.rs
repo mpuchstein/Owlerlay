@@ -1,13 +1,13 @@
 use crate::app_state::AppState;
 use crate::countdown::commands::build_snapshot_dtos;
 use crate::countdown::events::AppEvent;
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::response::sse::KeepAlive;
 use axum::response::{
     sse::{Event, Sse},
     Html,
 };
+use axum::Json;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::wrappers::BroadcastStream;
@@ -22,13 +22,6 @@ pub async fn overlay_countdown(
     State(state): State<Arc<AppState>>,
     Query(q): Query<OverlayQuery>,
 ) -> Html<String> {
-    let css_version = tokio::fs::metadata("public/overlay.css")
-        .await
-        .ok()
-        .and_then(|m| m.modified().ok())
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
     let config = state
         .overlay_configs
         .lock()
@@ -46,7 +39,7 @@ pub async fn overlay_countdown(
     let mut env = minijinja::Environment::new();
     env.add_template(
         "page",
-        include_str!("../../templates/overlay/countdown.html"),
+        include_str!("../../templates/overlay/countdown.html.j2"),
     )
     .unwrap();
     let html = env
@@ -58,7 +51,6 @@ pub async fn overlay_countdown(
             icon => config.icon,
             text_color => config.text_color,
             bg_color => config.bg_color,
-            css_version => css_version,
         })
         .unwrap();
     Html(html)
@@ -121,7 +113,10 @@ pub async fn list_icons() -> Json<Vec<String>> {
     if let Ok(mut entries) = tokio::fs::read_dir("public/icons").await {
         while let Ok(Some(entry)) = entries.next_entry().await {
             let path = entry.path();
-            if matches!(path.extension().and_then(|e| e.to_str()), Some("svg" | "png")) {
+            if matches!(
+                path.extension().and_then(|e| e.to_str()),
+                Some("svg" | "png")
+            ) {
                 if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
                     names.push(filename.to_string());
                 }

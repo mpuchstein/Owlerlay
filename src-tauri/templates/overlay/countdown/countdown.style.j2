@@ -1,0 +1,27 @@
+.countdown-list.vertical {
+  flex-direction: column;
+}
+
+.countdown-list.horizontal {
+  flex-direction: row;
+}
+
+.countdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.countdown-item.hidden {
+  display: none;
+}
+
+#timer-{{ id }} {
+  font-size: {{ font_size }}rem;
+  font-family: monospace;
+  color: {{ text_color }};
+  text-shadow: 2px 2px 4px black;
+}
+
+#icon { width: { icon_size }; height: { icon_size }; vertical-align: middle; margin-right: 0.5rem; }
