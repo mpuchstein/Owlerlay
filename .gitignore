@@ -60,3 +60,6 @@ dist/
 # bak folder
 _svelte_tmp
 src_bak
+
+# Playwright MCP artifacts
+.playwright-mcp/
