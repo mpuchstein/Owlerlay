@@ -220,6 +220,30 @@ PRs should include a short problem/solution summary, linked issues when
 relevant, screenshots/recordings for UI changes, and the exact verification
 commands run.
 
+## Releases
+
+Two remotes: **origin** = Forgejo (`somegit.dev`, driven by `tea`); **mirror**
+= GitHub (driven by `gh`). The mirror's `main` is only synced at release time.
+
+1. Bump the version in `package.json`, `src-tauri/Cargo.toml`,
+   `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.lock` (run `cargo build`
+   to sync the lock). Land it via a `chore(release): vX.Y.Z` PR — don't push
+   `main` directly.
+2. Push `main` to **both** remotes, then create and push an annotated tag
+   `vX.Y.Z` to **both**. The tag triggers `.github/workflows/release.yml` and
+   `.gitea/workflows/release.yml` (both fire on `tags: ['v*']`).
+3. Create the release object with notes (credit contributors) on each:
+   `gh release create vX.Y.Z -R <repo> --notes-file …` and
+   `tea release create --tag vX.Y.Z --note …`. Do this right after the tag
+   push, before the ~8-minute build finishes.
+4. Each build runs `tauri-action` with `tagName`, so it **attaches the
+   individual installers** (`.deb`/`.rpm`/`.AppImage`, `.msi`/`.exe`) to the
+   release for that tag automatically — no manual artifact download/upload.
+
+If a build can't attach assets (e.g. the Forgejo path needs verifying on a new
+release), fall back to uploading them by hand from the workflow run:
+`gh run download <id>` then `gh release upload` / `tea releases assets create`.
+
 ## Known cleanup backlog
 Tracked, not yet done (fix opportunistically):
 - About page is a one-line stub (`src/app/shell/AppShell.svelte`).
