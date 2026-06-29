@@ -55,11 +55,7 @@ pub fn load(handle: &AppHandle) -> (Vec<GroupDto>, HashMap<u64, OverlayConfig>) 
 /// that drives the 100ms countdown ticker or the LAN-remote SSE stream.
 /// Errors are dropped — every call site is best-effort, and a missed save
 /// just means the next mutation will rewrite the same shape anyway.
-pub fn save(
-    handle: &AppHandle,
-    groups: &[GroupDto],
-    configs: &HashMap<u64, OverlayConfig>,
-) {
+pub fn save(handle: &AppHandle, groups: &[GroupDto], configs: &HashMap<u64, OverlayConfig>) {
     let Ok(path) = store_path(handle) else {
         return;
     };

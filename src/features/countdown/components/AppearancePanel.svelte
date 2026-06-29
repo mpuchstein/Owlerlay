@@ -223,6 +223,13 @@
       ...DEFAULT_SETTINGS,
       icon: c.icon,
       showTimer: c.showTimer,
+      // Reverse `toConfig`'s `font` → `FONTS[font].stack` mapping. Without
+      // this the font silently reverts to DEFAULT_SETTINGS.font on every
+      // hydration, re-introducing the design-loss-on-view-switch bug.
+      font:
+        (Object.keys(FONTS) as FontKey[]).find(
+          (k) => FONTS[k].stack === c.fontFamily,
+        ) ?? DEFAULT_SETTINGS.font,
       fontSize: c.fontSize,
       textColor: c.textColor,
       iconSize: parseRem(c.iconSize),
@@ -248,6 +255,12 @@
     return overlaySettings[n] ?? hydrated[n] ?? DEFAULT_SETTINGS;
   }
   function set(patch: Partial<OverlaySettings>) {
+    // Ignore edits until the persisted config for this id has hydrated:
+    // otherwise getSettings() returns DEFAULT_SETTINGS and we'd save defaults
+    // over the user's stored design — the exact view-switch data-loss this
+    // panel fixes, as a startup race. The hydration RPC is local/sub-ms, so
+    // this only ever no-ops a physically-impossible fast click.
+    if (overlaySettings[id] === undefined && hydrated[id] === undefined) return;
     overlaySettings[id] = { ...getSettings(id), ...patch };
     void setOverlayConfig(id, toConfig(overlaySettings[id])).catch((e) =>
       console.error(e),

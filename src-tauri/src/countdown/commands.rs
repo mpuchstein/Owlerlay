@@ -159,6 +159,13 @@ pub async fn countdown_delete(
         .delete_countdown(id)
         .await
         .map_err(|e: CountdownError| e.to_string())?;
+    // Prune this countdown's persisted overlay styling so it can't linger in
+    // overlays.json (or resurrect onto a later reused id). Only re-save the
+    // overlay store when there was actually a config to drop.
+    if state.overlay_service.remove_config(id).await {
+        let (groups, configs) = state.overlay_service.snapshot().await;
+        crate::overlay::store::save(&app, &groups, &configs);
+    }
     let snapshots = build_snapshot_dtos(&state)
         .await
         .map_err(|e| e.to_string())?;
