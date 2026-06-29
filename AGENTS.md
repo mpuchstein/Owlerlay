@@ -224,25 +224,31 @@ commands run.
 
 Two remotes: **origin** = Forgejo (`somegit.dev`, driven by `tea`); **mirror**
 = GitHub (driven by `gh`). The mirror's `main` is only synced at release time.
+**GitHub is the only builder** — the Forgejo instance has no Actions runner (and
+no Windows runner anywhere), so there is no `.gitea` build workflow; the Gitea
+release is fed from the GitHub build.
 
 1. Bump the version in `package.json`, `src-tauri/Cargo.toml`,
    `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.lock` (run `cargo build`
    to sync the lock). Land it via a `chore(release): vX.Y.Z` PR — don't push
    `main` directly.
 2. Push `main` to **both** remotes, then create and push an annotated tag
-   `vX.Y.Z` to **both**. The tag triggers `.github/workflows/release.yml` and
-   `.gitea/workflows/release.yml` (both fire on `tags: ['v*']`).
-3. Create the release object with notes (credit contributors) on each:
+   `vX.Y.Z` to **both**. The tag triggers `.github/workflows/release.yml`
+   (`tags: ['v*']`).
+3. Create the release object with notes (credit contributors) on **both**:
    `gh release create vX.Y.Z -R <repo> --notes-file …` and
    `tea release create --tag vX.Y.Z --note …`. Do this right after the tag
    push, before the ~8-minute build finishes.
-4. Each build runs `tauri-action` with `tagName`, so it **attaches the
+4. The matrix build runs `tauri-action` with `tagName`, so it **attaches the
    individual installers** (`.deb`/`.rpm`/`.AppImage`, `.msi`/`.exe`) to the
-   release for that tag automatically — no manual artifact download/upload.
+   **GitHub** release automatically. The `sync-to-gitea` job then downloads
+   those assets and uploads them to the **Gitea** release for the same tag —
+   so both carry identical downloads with no manual step.
 
-If a build can't attach assets (e.g. the Forgejo path needs verifying on a new
-release), fall back to uploading them by hand from the workflow run:
-`gh run download <id>` then `gh release upload` / `tea releases assets create`.
+The `sync-to-gitea` job needs a **`GITEA_TOKEN`** repo secret on GitHub (a
+Forgejo PAT with release write); without it the job logs a skip and the build
+stays green. Manual fallback (also how the very first synced release was done):
+`gh release download vX.Y.Z` then `tea releases assets create vX.Y.Z <files>`.
 
 ## Known cleanup backlog
 Tracked, not yet done (fix opportunistically):
