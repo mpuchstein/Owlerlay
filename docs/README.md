@@ -21,6 +21,12 @@ top of this folder; completed (and now-archived) issues live under
 | [006](006-preview-per-group.md) | Per-group preview (static Svelte mock from OverlayConfig) | Low | Open | frontend-design |
 | [007](007-preview-per-countdown.md) | Per-countdown preview (static Svelte mock) | Low | Open | frontend-design |
 
+## Tech debt
+
+| # | Title | Priority | Status | Tag |
+|---|---|---|---|---|
+| [008](008-live-tick-followups.md) | Live-tick fan-out follow-ups (tick batching; CSS↔TICK_INTERVAL coupling; Running-guard rationale) | Low | Open | backend/perf |
+
 ## Dependency graph (post-001/002)
 
 ```
