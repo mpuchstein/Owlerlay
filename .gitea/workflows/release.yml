@@ -6,6 +6,9 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: write # tauri-action attaches the installers to the release
+
     strategy:
       fail-fast: false
       matrix:
@@ -47,15 +50,20 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install
 
-      - name: Build
+      - name: Build and attach installers to the release
         uses: tauri-apps/tauri-action@v0
+        env:
+          # Forgejo's Actions runner provides this token and points
+          # GITHUB_API_URL at the instance's GitHub-compatible API, so
+          # tauri-action attaches assets to the Gitea release the same way.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # Attach this build's installers (.deb/.rpm/.AppImage, .msi/.exe) to
+          # the release for the pushed tag — no manual artifact re-upload. Both
+          # matrix jobs target the same tag; tauri-action find-or-creates the
+          # one release and uploads to it.
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseDraft: false
+          prerelease: false
           args: --target ${{ matrix.target }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: owlerlay-${{ matrix.runner }}
-          path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/
-          if-no-files-found: warn
