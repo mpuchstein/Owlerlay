@@ -87,17 +87,23 @@ SSE event names, routes, token scheme, tick↔CSS timing) are **mirrored by hand
 with no codegen. Before changing one, check its mirrors:
 [`docs/sync-contracts.md`](docs/sync-contracts.md).
 
-**Knowledge graph (graphify).** `graphify-out/` holds a navigable graph of
-these flows; only `graphify-out/wiki/` is committed (graph internals are
-gitignored and rebuilt locally). Query it with `graphify query "<question>"`
-instead of grepping. Two maintenance gotchas:
+**Knowledge graph (graphify).** `graphify-out/` holds a navigable graph of the
+codebase and these flows; only `graphify-out/wiki/` is committed (graph
+internals are gitignored and rebuilt locally).
 
-- The git post-commit hook only rebuilds from **code** changes (AST, no LLM).
+Using it (any AI agent — prefer it over grepping for codebase questions):
+- `graphify query "<question>"` for focused questions, `graphify path "<A>"
+  "<B>"` for relationships, `graphify explain "<concept>"` for one node — each
+  returns a scoped subgraph, usually much smaller than grep output.
+- `graphify-out/wiki/index.md` is the entry point for broad navigation;
+  read `graphify-out/GRAPH_REPORT.md` only for whole-architecture review.
+
+Keeping it fresh — two gotchas:
+- The git post-commit hook rebuilds from **code** changes only (AST, no LLM).
   After editing **docs or templates**, refresh by hand: `graphify update .`.
-- graphify's file detection **skips the overlay `.j2` templates** (unknown
-  extension), so a from-scratch rebuild won't include them unless they're
-  added to the semantic pass manually. The incremental `graphify update .`
-  path is unaffected.
+- graphify's detection **skips the overlay `.j2` templates** (unknown
+  extension), so a from-scratch rebuild won't include them unless they're added
+  to the semantic pass manually. Incremental `graphify update .` is unaffected.
 
 **Debug-only MCP bridge** (`tauri-plugin-mcp-bridge`, bound to `127.0.0.1`).
 Lets an AI agent drive the native webview (keyboard, screenshots, IPC) for
