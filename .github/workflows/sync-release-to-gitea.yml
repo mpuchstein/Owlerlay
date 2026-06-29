@@ -1,0 +1,63 @@
+name: Sync release to Gitea
+
+# Manually copy a GitHub release's installers onto the matching Gitea release.
+# The automatic `sync-to-gitea` job in release.yml does this on every tag; this
+# is the on-demand version — for back-filling an older release or re-running
+# after a transient failure. Overwrites same-named assets so it's idempotent.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to sync (e.g. v0.4.1)'
+        required: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync GitHub release assets to the Gitea release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_HOST: somegit.dev
+          GITEA_REPO: mpuchstein/Owlerlay
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GITEA_TOKEN}" ]; then
+            echo "::error::GITEA_TOKEN secret is not set."; exit 1
+          fi
+          api="https://${GITEA_HOST}/api/v1/repos/${GITEA_REPO}"
+          auth="Authorization: token ${GITEA_TOKEN}"
+
+          mkdir -p assets && cd assets
+          gh release download "${TAG}" -R "${GH_REPO}"
+          echo "Downloaded from GitHub: $(ls | tr '\n' ' ')"
+
+          rel_id=$(curl -fsS -H "${auth}" "${api}/releases/tags/${TAG}" | jq -r .id)
+          if [ -z "${rel_id}" ] || [ "${rel_id}" = "null" ]; then
+            echo "::error::No Gitea release for ${TAG} (create it with 'tea release create')."; exit 1
+          fi
+          echo "Gitea release id for ${TAG} = ${rel_id} (authenticated read OK)"
+
+          curl -fsS -H "${auth}" "${api}/releases/${rel_id}/assets" > /tmp/existing.json
+
+          for f in *; do
+            old=$(jq -r --arg n "${f}" '.[] | select(.name==$n) | .id' /tmp/existing.json)
+            if [ -n "${old}" ] && [ "${old}" != "null" ]; then
+              echo "  overwrite: deleting existing ${f} (asset ${old})"
+              curl -fsS -X DELETE -H "${auth}" "${api}/releases/${rel_id}/assets/${old}" >/dev/null
+            fi
+            code=$(curl -s -o /tmp/up.json -w "%{http_code}" -X POST -H "${auth}" \
+              -F "attachment=@${f};type=application/octet-stream" \
+              "${api}/releases/${rel_id}/assets?name=${f}")
+            if [ "${code}" = "201" ]; then
+              echo "  ✓ ${f}"
+            else
+              echo "::error::upload of ${f} failed — HTTP ${code} (check GITEA_TOKEN has write:repository)"
+              cat /tmp/up.json || true
+              exit 1
+            fi
+          done
+          echo "✅ Synced $(ls | wc -l) assets to the Gitea ${TAG} release."
