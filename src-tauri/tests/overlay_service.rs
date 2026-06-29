@@ -1,3 +1,4 @@
+use owlerlay_lib::overlay::dto::{GroupDto, GroupsAndConfigsDto};
 use owlerlay_lib::overlay::model::{Layout, OverlayConfig};
 use owlerlay_lib::overlay::service::OverlayService;
 
@@ -75,4 +76,240 @@ async fn config_round_trips_and_defaults_when_unset() {
     cfg.icon = "owl.svg".into();
     svc.set_config(42, cfg).await;
     assert_eq!(svc.get_config(42).await.icon, "owl.svg");
+}
+
+// --- 001 + 002 persist support (docs/001 + docs/002) -------------------
+
+fn dto(id: u64, name: &str, members: Vec<u64>, layout: Layout, hide_idle: bool) -> GroupDto {
+    GroupDto {
+        id,
+        name: name.to_string(),
+        members,
+        layout,
+        hide_idle,
+    }
+}
+
+/// Restore must rebuild the live service from DTOs and preserve every field:
+/// group name, members (in order), layout, hide_idle. Per-countdown configs
+/// must round-trip by id.
+#[tokio::test]
+async fn overlay_restore_round_trips_groups_and_configs() {
+    let groups = vec![
+        dto(2, "BRB", vec![11, 12], Layout::Row, true),
+        dto(5, "Intro", vec![12], Layout::Column, false),
+    ];
+    let mut cfgs = std::collections::HashMap::new();
+    cfgs.insert(
+        12,
+        OverlayConfig {
+            icon: "owl.svg".into(),
+            border_radius: 14,
+            ..Default::default()
+        },
+    );
+
+    let svc = OverlayService::from_groups_and_configs(groups, cfgs.clone());
+
+    let listed = svc.list_groups().await;
+    assert_eq!(listed.len(), 2);
+    // First id wins, second dropped — they share id 2 isn't possible here; the
+    // dedup invariant is covered separately below.
+    let brb = listed.iter().find(|g| g.id == 2).expect("BRB present");
+    assert_eq!(brb.name, "BRB");
+    assert_eq!(brb.members, vec![11, 12]);
+    assert_eq!(brb.layout, Layout::Row);
+    assert!(brb.hide_idle);
+
+    let intro = listed.iter().find(|g| g.id == 5).expect("Intro present");
+    assert_eq!(intro.name, "Intro");
+    assert_eq!(intro.members, vec![12]);
+    assert_eq!(intro.layout, Layout::Column);
+    assert!(!intro.hide_idle);
+
+    // Unset config still defaults.
+    assert_eq!(svc.get_config(7).await.icon, "");
+    // Set one survives.
+    let restored = svc.get_config(12).await;
+    assert_eq!(restored.icon, "owl.svg");
+    assert_eq!(restored.border_radius, 14);
+}
+
+/// Restored groups must not collide with newly created ones — next_id is
+/// `max(restored id) + 1`.
+#[tokio::test]
+async fn overlay_restore_next_id_avoids_collision() {
+    let groups = vec![dto(3, "g", vec![], Layout::Column, false)];
+    let svc = OverlayService::from_groups_and_configs(groups, Default::default());
+
+    let new_id = svc.create_group("fresh".into()).await.expect("create");
+    assert_eq!(new_id, 4, "next_id must be max(restored id)+1");
+}
+
+/// `next_id` must not panic on the largest possible id (corrupt/hand-edited
+/// store would have hit an overflow otherwise).
+#[tokio::test]
+async fn overlay_restore_next_id_does_not_overflow_on_max() {
+    let groups = vec![dto(u64::MAX, "g", vec![], Layout::Column, false)];
+    let svc = OverlayService::from_groups_and_configs(groups, Default::default());
+    assert_eq!(svc.list_groups().await.len(), 1);
+}
+
+/// Duplicate ids in a hand-edited store must collapse to one entry (first
+/// wins) so a corrupt save can't silently drop a group in nondeterministic
+/// HashMap order.
+#[tokio::test]
+async fn overlay_restore_dedups_duplicate_group_ids() {
+    let mut a = dto(7, "first", vec![1], Layout::Column, false);
+    let b = dto(7, "second", vec![2], Layout::Row, true);
+    a.layout = Layout::Row;
+    let svc = OverlayService::from_groups_and_configs(vec![a, b], Default::default());
+
+    let listed = svc.list_groups().await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].name, "first");
+    assert_eq!(listed[0].layout, Layout::Row);
+}
+
+/// Empty restore (first launch, corrupt fallback) starts ids at 0, matching
+/// the fresh-service default.
+#[tokio::test]
+async fn overlay_restore_empty_starts_ids_at_zero() {
+    let svc = OverlayService::from_groups_and_configs(Vec::new(), Default::default());
+    assert!(svc.list_groups().await.is_empty());
+    let new_id = svc.create_group("first".into()).await.expect("create");
+    assert_eq!(new_id, 0);
+}
+
+/// `snapshot()` returns the current state shaped for the on-disk DTO so the
+/// save path stays decoupled from service internals.
+#[tokio::test]
+async fn overlay_snapshot_returns_groups_and_configs() {
+    let svc = OverlayService::new();
+    let gid = svc.create_group("g".into()).await.expect("create");
+    svc.set_config(
+        99,
+        OverlayConfig {
+            icon: "owl.svg".into(),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    let (groups, cfgs) = svc.snapshot().await;
+    assert_eq!(groups.len(), 1);
+    assert_eq!(groups[0].id, gid);
+    assert_eq!(groups[0].name, "g");
+    assert_eq!(cfgs.len(), 1);
+    assert_eq!(cfgs.get(&99).unwrap().icon, "owl.svg");
+}
+
+/// `GroupsAndConfigsDto` round-trips through JSON so a hand-edited file can
+/// be loaded unchanged, and so on-disk shape stays stable across saves.
+#[test]
+fn overlay_dto_json_round_trip() {
+    let groups = [dto(1, "Intro", vec![7], Layout::Column, true)];
+    let mut cfgs = std::collections::HashMap::new();
+    cfgs.insert(
+        7,
+        OverlayConfig {
+            icon: "owl.svg".into(),
+            ..Default::default()
+        },
+    );
+
+    let dto = GroupsAndConfigsDto::from_parts(groups.iter().cloned(), &cfgs);
+    let json = serde_json::to_string(&dto).expect("serialize");
+    let back: GroupsAndConfigsDto = serde_json::from_str(&json).expect("parse");
+
+    let (back_groups, back_cfgs) = back.into_parts();
+    assert_eq!(back_groups.len(), 1);
+    assert_eq!(back_groups[0].name, "Intro");
+    assert_eq!(back_groups[0].members, vec![7]);
+    assert!(back_groups[0].hide_idle);
+    assert_eq!(back_cfgs.len(), 1);
+    assert_eq!(back_cfgs.get(&7).unwrap().icon, "owl.svg");
+}
+
+/// A non-numeric config id (corrupt/hand-edited store) is a parse error, not a
+/// silent drop — so `store::load` quarantines the whole file to `.json.corrupt`
+/// and falls back to empty, the same all-or-nothing rule the countdown store
+/// uses. (serde_json parses the `u64` map keys natively.)
+#[test]
+fn overlay_dto_rejects_non_numeric_config_keys() {
+    let parsed = serde_json::from_str::<GroupsAndConfigsDto>(
+        r##"{
+            "groups": [],
+            "configs": { "not-a-number": { "icon": "owl.svg" } }
+        }"##,
+    );
+    assert!(parsed.is_err(), "non-numeric config key must fail to parse");
+}
+
+/// Integer-keyed configs serialize as `{"<id>": OverlayConfig}` with no
+/// envelope, and round-trip back to the same id.
+#[test]
+fn overlay_dto_configs_serialize_with_integer_keys() {
+    let mut cfgs = std::collections::HashMap::new();
+    cfgs.insert(
+        7u64,
+        OverlayConfig {
+            icon: "owl.svg".into(),
+            ..Default::default()
+        },
+    );
+
+    let dto = GroupsAndConfigsDto::from_parts(Vec::new(), &cfgs);
+    let json = serde_json::to_string(&dto).expect("serialize");
+    assert!(json.contains("\"7\":{"), "configs keyed by id: {json}");
+    assert!(json.contains("\"icon\":\"owl.svg\""), "got: {json}");
+
+    let back: GroupsAndConfigsDto = serde_json::from_str(&json).expect("parse");
+    let (_, back_cfgs) = back.into_parts();
+    assert_eq!(back_cfgs.get(&7).unwrap().icon, "owl.svg");
+}
+
+/// A corrupt/hand-edited store with more groups than `create_group` would ever
+/// allow must cap at MAX_GROUPS (20) on restore — the same guardrail the
+/// countdown restore applies — so the rail can't be handed an unbounded count.
+#[tokio::test]
+async fn overlay_restore_caps_groups_at_max() {
+    let groups: Vec<GroupDto> = (0..25)
+        .map(|i| dto(i, "g", vec![], Layout::Column, false))
+        .collect();
+    let svc = OverlayService::from_groups_and_configs(groups, Default::default());
+    assert_eq!(svc.list_groups().await.len(), 20);
+}
+
+/// A blank-named group in a corrupt store is dropped on restore (create_group
+/// rejects blank names, so a restore must not resurrect one).
+#[tokio::test]
+async fn overlay_restore_drops_blank_named_groups() {
+    let groups = vec![
+        dto(1, "  ", vec![], Layout::Column, false),
+        dto(2, "Intro", vec![], Layout::Column, false),
+    ];
+    let svc = OverlayService::from_groups_and_configs(groups, Default::default());
+    let listed = svc.list_groups().await;
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].id, 2);
+}
+
+/// Deleting a countdown's config (the prune wired into countdown_delete) drops
+/// it from the store so it can't linger or resurrect onto a reused id.
+#[tokio::test]
+async fn overlay_remove_config_drops_persisted_styling() {
+    let svc = OverlayService::new();
+    svc.set_config(
+        42,
+        OverlayConfig {
+            icon: "owl.svg".into(),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    assert!(svc.remove_config(42).await, "config existed → removed");
+    assert_eq!(svc.get_config(42).await.icon, "", "back to default");
+    assert!(!svc.remove_config(42).await, "second remove is a no-op");
 }

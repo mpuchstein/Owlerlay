@@ -1,3 +1,4 @@
+use crate::overlay::dto::GroupDto;
 use crate::overlay::errors::OverlayError;
 use crate::overlay::model::{Group, Layout, OverlayConfig};
 use std::collections::HashMap;
@@ -29,6 +30,66 @@ impl OverlayService {
         }
     }
 
+    /// Rebuild the service from persisted [`GroupDto`]s + per-id configs.
+    /// `next_id` is derived as `max(group.id)+1` over the *full* input (so it
+    /// can't collide with a retained entry); a saturating add defends against a
+    /// hand-edited store where `max(id) == u64::MAX` — overflow would otherwise
+    /// panic on boot. Empty input starts ids at 0, matching the fresh-service
+    /// default. The same corrupt-store defenses [`CountdownService::from_dtos`]
+    /// applies hold here: cap restored groups at [`MAX_GROUPS`] (the limit
+    /// `create_group` enforces), drop blank-named groups it would itself reject,
+    /// and keep the first entry per duplicate id (no nondeterministic drop).
+    pub fn from_groups_and_configs(
+        groups: Vec<GroupDto>,
+        configs: HashMap<u64, OverlayConfig>,
+    ) -> Self {
+        let next_id = groups
+            .iter()
+            .map(|g| g.id)
+            .max()
+            .map_or(0, |m| m.saturating_add(1));
+        let mut groups_map: HashMap<u64, Group> =
+            HashMap::with_capacity(groups.len().min(MAX_GROUPS));
+        for g in groups {
+            if groups_map.len() >= MAX_GROUPS {
+                break;
+            }
+            if g.name.trim().is_empty() {
+                continue;
+            }
+            // First entry per id wins. A duplicate id in a hand-edited store
+            // can't silently drop a group in nondeterministic HashMap order.
+            groups_map.entry(g.id).or_insert_with(|| Group {
+                id: g.id,
+                name: g.name,
+                members: g.members,
+                layout: g.layout,
+                hide_idle: g.hide_idle,
+            });
+        }
+        Self {
+            groups: Mutex::new(groups_map),
+            configs: Mutex::new(configs),
+            next_id: Mutex::new(next_id),
+        }
+    }
+
+    /// Snapshot the current overlay state into the persisted DTO shape.
+    /// Mirrors the in-memory map back to disk-safe types so the save path
+    /// doesn't reach into the service's internals.
+    pub async fn snapshot(&self) -> (Vec<GroupDto>, HashMap<u64, OverlayConfig>) {
+        let groups: Vec<GroupDto> = self
+            .groups
+            .lock()
+            .await
+            .values()
+            .cloned()
+            .map(GroupDto::from)
+            .collect();
+        let configs = self.configs.lock().await.clone();
+        (groups, configs)
+    }
+
     pub async fn create_group(&self, name: String) -> Result<u64, OverlayError> {
         let name = name.trim().to_string();
         if name.is_empty() {
@@ -40,7 +101,9 @@ impl OverlayService {
         }
         let mut next_id = self.next_id.lock().await;
         let id = *next_id;
-        *next_id += 1;
+        // saturating_add matches the restore path's overflow contract — the two
+        // halves of the same counter must defend identically.
+        *next_id = next_id.saturating_add(1);
         groups.insert(
             id,
             Group {
@@ -104,5 +167,14 @@ impl OverlayService {
             .get(&id)
             .cloned()
             .unwrap_or_default()
+    }
+
+    /// Drop the persisted styling for a countdown that no longer exists.
+    /// Called from the countdown delete path so a deleted timer's config can't
+    /// linger in `overlays.json` forever (or resurrect onto a later reused id).
+    /// Returns whether anything was removed, so the caller only re-saves when
+    /// there was a config to prune.
+    pub async fn remove_config(&self, id: u64) -> bool {
+        self.configs.lock().await.remove(&id).is_some()
     }
 }

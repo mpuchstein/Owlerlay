@@ -15,7 +15,7 @@ use crate::countdown::commands::{
     countdown_resume, countdown_snapshot, countdown_start, spawn_ticker,
 };
 use crate::overlay::commands::{
-    group_create, group_delete, group_list, group_update, set_overlay_config,
+    get_overlay_config, group_create, group_delete, group_list, group_update, set_overlay_config,
 };
 use crate::remote::{remote_get_settings, remote_regenerate_token, remote_set_enabled};
 use tauri::Manager;
@@ -47,11 +47,17 @@ pub fn run() {
             let config = settings::load_config(&handle);
             let token = settings::load_or_create_token(&handle);
             let persisted = countdown::store::load(&handle);
+            // Restore overlay groups + per-countdown styling together (single
+            // atomic `overlays.json`), matching the single-store-per-widget
+            // rule. Both pieces share the same save path on every mutation.
+            let (persisted_groups, persisted_configs) = overlay::store::load(&handle);
             app.manage(Arc::new(AppState::new(
                 handle,
                 config.remote_enabled,
                 token,
                 persisted,
+                persisted_groups,
+                persisted_configs,
             )));
             Ok(())
         })
@@ -65,6 +71,7 @@ pub fn run() {
             countdown_pause,
             countdown_snapshot,
             set_overlay_config,
+            get_overlay_config,
             group_create,
             group_list,
             group_update,

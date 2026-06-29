@@ -1,7 +1,10 @@
 use crate::countdown::dto::CountdownSnapshotDto;
 use crate::countdown::events::AppEvent;
 use crate::countdown::service::CountdownService;
+use crate::overlay::dto::GroupDto;
+use crate::overlay::model::OverlayConfig;
 use crate::overlay::service::OverlayService;
+use std::collections::HashMap;
 use tauri::AppHandle;
 use tokio::sync::{RwLock, broadcast};
 
@@ -55,6 +58,8 @@ impl AppState {
         remote_enabled: bool,
         remote_token: String,
         persisted: Vec<CountdownSnapshotDto>,
+        persisted_groups: Vec<GroupDto>,
+        persisted_configs: HashMap<u64, OverlayConfig>,
     ) -> Self {
         // The ticker emits up to one event per running countdown every 100ms, so
         // size the buffer off the cap (×4 ≈ a few cycles of headroom) — keeps a
@@ -64,10 +69,12 @@ impl AppState {
         // running timers keep counting across the restart.
         let clock_anchor = ClockAnchor::new();
         let countdown_service = CountdownService::from_dtos(persisted, clock_anchor.boot_epoch_ms);
+        let overlay_service =
+            OverlayService::from_groups_and_configs(persisted_groups, persisted_configs);
         Self {
             clock_anchor,
             countdown_service,
-            overlay_service: OverlayService::new(),
+            overlay_service,
             event_bus,
             app_handle,
             remote_enabled,
