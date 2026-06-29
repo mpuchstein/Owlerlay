@@ -63,3 +63,13 @@ src_bak
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# graphify knowledge graph: ignore regenerable internals (graph.json/html,
+# caches, interpreter pin) — the post-commit hook rewrites them every commit.
+# Keep only the human/agent-readable wiki tracked for contributors.
+graphify-out/*
+!graphify-out/wiki/
+
+# Claude local/machine state (the shared graphify hook lives in settings.json)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

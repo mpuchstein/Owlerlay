@@ -108,3 +108,9 @@ collaboration rules live in [AGENTS.md](./AGENTS.md).
 
 Conventional Commits (`feat:`, `fix:`, …). Collaboration rules and conventions
 live in [AGENTS.md](./AGENTS.md).
+
+The control UI, OBS overlay, and phone remote share data shapes that are mirrored
+by hand. Before changing a shared enum, SSE event, route, or config field, check
+[docs/sync-contracts.md](docs/sync-contracts.md). A graphify knowledge-graph wiki
+of the cross-frontend flows lives in `graphify-out/wiki/` (run `/graphify` to
+build/refresh your local copy).

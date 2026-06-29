@@ -82,6 +82,11 @@ to OBS overlays). The LAN remote POSTs hit `server::remote::router`, which
 calls the same `AppState` services so the desktop panel and OBS overlay
 update live.
 
+The data shapes those three frontends share (state enum, `OverlayConfig`,
+SSE event names, routes, token scheme, tick↔CSS timing) are **mirrored by hand**
+with no codegen. Before changing one, check its mirrors:
+[`docs/sync-contracts.md`](docs/sync-contracts.md).
+
 **Debug-only MCP bridge** (`tauri-plugin-mcp-bridge`, bound to `127.0.0.1`).
 Lets an AI agent drive the native webview (keyboard, screenshots, IPC) for
 UI testing. Gated by `#[cfg(debug_assertions)]` in `lib.rs`; the crate stays
