@@ -9,11 +9,10 @@
   import AppearancePanel from "./AppearancePanel.svelte";
 
   const sel = $derived($countdownStore.selected!);
-  const live = $derived($countdownStore.liveRemaining);
 
-  const shown = $derived<Duration>(
-    sel.state === "Running" && live ? live : sel.duration,
-  );
+  // `sel.duration` ticks live (the store patches the selected item on each
+  // countdown_tick), so it's the single source for the big readout.
+  const shown = $derived<Duration>(sel.duration);
   const parts = $derived(formatClock(shown).split(":"));
   const percent = $derived.by(() => {
     const initial = durationToMillis(sel.initialDuration);

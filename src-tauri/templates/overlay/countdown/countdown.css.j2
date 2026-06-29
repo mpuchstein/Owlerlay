@@ -29,4 +29,8 @@
 }
 #progress-inner-{{ c.id }} {
     background-color: {{ c.bar_fg }};
+    /* Glide between ticks so the bar reads as continuous on stream. Duration
+       tracks TICK_INTERVAL in src-tauri/src/countdown/commands.rs — keep them in
+       sync (a longer value lags the readout, a shorter one stutters). */
+    transition: width 250ms linear;
 }

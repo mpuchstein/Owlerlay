@@ -24,7 +24,6 @@ type CountdownStateStore = {
   selectedId: number | null;
   loading: boolean;
   error: string | null;
-  liveRemaining: Duration | null;
 };
 
 const initialStateStore: CountdownStateStore = {
@@ -33,7 +32,6 @@ const initialStateStore: CountdownStateStore = {
   selectedId: null,
   loading: false,
   error: null,
-  liveRemaining: null,
 };
 
 const { subscribe, update } = writable(initialStateStore);
@@ -79,7 +77,7 @@ export async function loadList() {
 export function select(id: number) {
   update((s) => {
     const selected = s.items.find((x) => x.id === id) ?? null;
-    return { ...s, selectedId: id, selected, liveRemaining: null };
+    return { ...s, selectedId: id, selected };
   });
 }
 
@@ -93,7 +91,6 @@ export async function create(label: string, duration: Duration) {
       items: freshItems,
       selectedId: nId,
       selected: freshItems.find((x) => x.id === nId) ?? null,
-      liveRemaining: null,
     }));
   } catch (error) {
     update((state) => {
@@ -118,7 +115,6 @@ export async function deleteSelected() {
       ...s,
       selected: next,
       selectedId: next?.id ?? null,
-      liveRemaining: null,
     }));
   } catch (error) {
     update((state) => {
@@ -150,11 +146,24 @@ export async function initStoreListeners(): Promise<() => void> {
   const unlistenTick = await listen<CountdownTickPayload>(
     "countdown_tick",
     (e) => {
-      update((s) =>
-        s.selectedId !== e.payload.id
-          ? s
-          : { ...s, liveRemaining: millisToDuration(e.payload.remaining_ms) },
-      );
+      update((s) => {
+        const duration = millisToDuration(e.payload.remaining_ms);
+        // Patch the ticked countdown in place so its rail row counts down live
+        // (and the detail panel, which reads the selected item, with it). Guard
+        // on Running: the backend only ticks running timers, so a tick that
+        // races in after a reset/pause is stale and must not overwrite the
+        // authoritative value countdown_changed just set.
+        const isLiveTick = (it: CountdownSnapshot) =>
+          it.id === e.payload.id && it.state === "Running";
+        const items = s.items.map((it) =>
+          isLiveTick(it) ? { ...it, duration } : it,
+        );
+        const selected =
+          s.selected && isLiveTick(s.selected)
+            ? { ...s.selected, duration }
+            : s.selected;
+        return { ...s, items, selected };
+      });
     },
   );
 
@@ -167,9 +176,7 @@ export async function initStoreListeners(): Promise<() => void> {
           s.selectedId !== null
             ? (items.find((x) => x.id === s.selectedId) ?? null)
             : null;
-        const liveRemaining =
-          selected?.state === "Running" ? s.liveRemaining : null;
-        return { ...s, items, selected, liveRemaining };
+        return { ...s, items, selected };
       });
     },
   );

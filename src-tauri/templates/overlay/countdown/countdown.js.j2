@@ -6,7 +6,20 @@ es.addEventListener('countdown-tick', e => {
   const timer = document.getElementById('timer-' + id);
   if (timer) timer.textContent = remaining;
   const fill = document.getElementById('progress-inner-' + id);
-  if (fill) fill.style.width = percent + '%';
+  if (fill) {
+    const prev = parseFloat(fill.style.width) || 0;
+    if (percent > prev) {
+      // A reset/restore jumps the bar back up — snap instead of letting the CSS
+      // transition sweep it backward over a quarter-second on stream. The glide
+      // is only meant to smooth the normal countdown decrease.
+      fill.style.transition = 'none';
+      fill.style.width = percent + '%';
+      void fill.offsetWidth; // commit the snap before re-enabling the glide
+      fill.style.transition = '';
+    } else {
+      fill.style.width = percent + '%';
+    }
+  }
 });
 
 es.addEventListener('countdown-state', e => {
