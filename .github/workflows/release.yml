@@ -69,3 +69,42 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
+
+  # GitHub is the only builder — the Forgejo mirror (somegit.dev) has no Actions
+  # runner (and no Windows runner anywhere), so it can't build its own bundles.
+  # After the build attaches installers to the GitHub release, mirror those same
+  # files onto the matching Gitea release so both carry identical downloads.
+  # Skips cleanly (no failure) until a GITEA_TOKEN secret is configured.
+  sync-to-gitea:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror release installers to the Gitea release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_HOST: somegit.dev
+          GITEA_REPO: mpuchstein/Owlerlay
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GITEA_TOKEN}" ]; then
+            echo "GITEA_TOKEN not set — skipping Gitea sync. Add the secret to enable."
+            exit 0
+          fi
+          mkdir -p assets && cd assets
+          gh release download "${TAG}" -R "${GH_REPO}"
+          rel_id=$(curl -fsS -H "Authorization: token ${GITEA_TOKEN}" \
+            "https://${GITEA_HOST}/api/v1/repos/${GITEA_REPO}/releases/tags/${TAG}" | jq -r .id)
+          if [ -z "${rel_id}" ] || [ "${rel_id}" = "null" ]; then
+            echo "No Gitea release for ${TAG} (create it with 'tea release create') — skipping."
+            exit 0
+          fi
+          for f in *; do
+            echo "Uploading ${f} → Gitea release ${rel_id}"
+            curl -fsS -X POST -H "Authorization: token ${GITEA_TOKEN}" \
+              -F "attachment=@${f};type=application/octet-stream" \
+              "https://${GITEA_HOST}/api/v1/repos/${GITEA_REPO}/releases/${rel_id}/assets?name=${f}" \
+              >/dev/null && echo "  ✓ ${f}" || echo "  ✗ ${f} (already present?)"
+          done
