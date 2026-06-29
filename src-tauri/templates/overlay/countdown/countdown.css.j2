@@ -29,4 +29,7 @@
 }
 #progress-inner-{{ c.id }} {
     background-color: {{ c.bar_fg }};
+    /* Glide between the 250ms ticks so the bar reads as continuous on stream,
+       independent of the broadcast cadence. */
+    transition: width 250ms linear;
 }

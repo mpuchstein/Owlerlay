@@ -215,9 +215,16 @@ pub async fn countdown_snapshot(
     Ok(snap_to_dto(s, &state.clock_anchor))
 }
 
+/// How often the running countdowns are re-evaluated and broadcast. Every
+/// consumer (OBS overlay, desktop rail, phone remote) displays time to the
+/// second and is driven per-tick, so 250ms (4Hz) flips a second within ≤250ms
+/// of its true moment — imperceptible — while cutting emit/SSE/render load 2.5×
+/// versus 100ms. The overlay progress bar stays smooth via a CSS transition.
+const TICK_INTERVAL: tokio::time::Duration = tokio::time::Duration::from_millis(250);
+
 pub(crate) fn spawn_ticker(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(100));
+        let mut interval = tokio::time::interval(TICK_INTERVAL);
         loop {
             interval.tick().await;
             let state = app.state::<Arc<AppState>>();
