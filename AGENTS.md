@@ -87,6 +87,18 @@ SSE event names, routes, token scheme, tick↔CSS timing) are **mirrored by hand
 with no codegen. Before changing one, check its mirrors:
 [`docs/sync-contracts.md`](docs/sync-contracts.md).
 
+**Knowledge graph (graphify).** `graphify-out/` holds a navigable graph of
+these flows; only `graphify-out/wiki/` is committed (graph internals are
+gitignored and rebuilt locally). Query it with `graphify query "<question>"`
+instead of grepping. Two maintenance gotchas:
+
+- The git post-commit hook only rebuilds from **code** changes (AST, no LLM).
+  After editing **docs or templates**, refresh by hand: `graphify update .`.
+- graphify's file detection **skips the overlay `.j2` templates** (unknown
+  extension), so a from-scratch rebuild won't include them unless they're
+  added to the semantic pass manually. The incremental `graphify update .`
+  path is unaffected.
+
 **Debug-only MCP bridge** (`tauri-plugin-mcp-bridge`, bound to `127.0.0.1`).
 Lets an AI agent drive the native webview (keyboard, screenshots, IPC) for
 UI testing. Gated by `#[cfg(debug_assertions)]` in `lib.rs`; the crate stays
