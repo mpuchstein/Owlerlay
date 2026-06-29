@@ -219,7 +219,9 @@ pub async fn countdown_snapshot(
 /// consumer (OBS overlay, desktop rail, phone remote) displays time to the
 /// second and is driven per-tick, so 250ms (4Hz) flips a second within ≤250ms
 /// of its true moment — imperceptible — while cutting emit/SSE/render load 2.5×
-/// versus 100ms. The overlay progress bar stays smooth via a CSS transition.
+/// versus 100ms. The overlay progress bar stays smooth via a CSS transition
+/// whose duration matches this in `templates/overlay/countdown/countdown.css.j2`
+/// — keep the two in sync.
 const TICK_INTERVAL: tokio::time::Duration = tokio::time::Duration::from_millis(250);
 
 pub(crate) fn spawn_ticker(app: AppHandle) {

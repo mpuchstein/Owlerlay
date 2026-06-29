@@ -149,12 +149,17 @@ export async function initStoreListeners(): Promise<() => void> {
       update((s) => {
         const duration = millisToDuration(e.payload.remaining_ms);
         // Patch the ticked countdown in place so its rail row counts down live
-        // (and the detail panel, which reads the selected item, with it).
+        // (and the detail panel, which reads the selected item, with it). Guard
+        // on Running: the backend only ticks running timers, so a tick that
+        // races in after a reset/pause is stale and must not overwrite the
+        // authoritative value countdown_changed just set.
+        const isLiveTick = (it: CountdownSnapshot) =>
+          it.id === e.payload.id && it.state === "Running";
         const items = s.items.map((it) =>
-          it.id === e.payload.id ? { ...it, duration } : it,
+          isLiveTick(it) ? { ...it, duration } : it,
         );
         const selected =
-          s.selected?.id === e.payload.id
+          s.selected && isLiveTick(s.selected)
             ? { ...s.selected, duration }
             : s.selected;
         return { ...s, items, selected };
