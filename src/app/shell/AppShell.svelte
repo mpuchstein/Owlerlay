@@ -37,6 +37,16 @@
     subject = "countdown"; // the store auto-selects the new countdown
   }
 
+  /**
+   * NOTE: a warm-up fetch for all per-countdown overlay configs was
+   * considered here (docs/002 step 7). The per-panel `$effect` in
+   * `AppearancePanel` already guarantees correctness — a shared cache
+   * saves one RPC on rapid panel switching, which isn't worth a new store
+   * + duplicated parse logic yet. When the dashboard (004) and previews
+   * (006/007) need a shared cache, that's the right moment to introduce
+   * it; the fetch call lands in one place then.
+   */
+
   onMount(async () => {
     await countdownStore.loadList();
     cleanup = await countdownStore.initStoreListeners();

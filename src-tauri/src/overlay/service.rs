@@ -1,3 +1,4 @@
+use crate::overlay::dto::GroupDto;
 use crate::overlay::errors::OverlayError;
 use crate::overlay::model::{Group, Layout, OverlayConfig};
 use std::collections::HashMap;
@@ -27,6 +28,58 @@ impl OverlayService {
             configs: Mutex::new(HashMap::new()),
             next_id: Mutex::new(0),
         }
+    }
+
+    /// Rebuild the service from persisted [`GroupDto`]s + per-id configs.
+    /// `next_id` is derived as `max(group.id)+1` (gaps from past deletes don't
+    /// matter — we only need to avoid colliding with a restored id). A
+    /// saturating add defends against a hand-edited store where `max(id) ==
+    /// u64::MAX` — overflow would otherwise panic on boot.
+    /// Empty input starts ids at 0, matching the fresh-service default.
+    pub fn from_groups_and_configs(
+        groups: Vec<GroupDto>,
+        configs: HashMap<u64, OverlayConfig>,
+    ) -> Self {
+        let next_id = groups
+            .iter()
+            .map(|g| g.id)
+            .max()
+            .map_or(0, |m| m.saturating_add(1));
+        let mut groups_map: HashMap<u64, Group> = HashMap::with_capacity(groups.len());
+        for g in groups {
+            // First entry per id wins. A duplicate id in a hand-edited store
+            // can't silently drop a group in nondeterministic HashMap order.
+            groups_map.entry(g.id).or_insert_with(|| Group {
+                id: g.id,
+                name: g.name,
+                members: g.members,
+                layout: g.layout,
+                hide_idle: g.hide_idle,
+            });
+        }
+        Self {
+            groups: Mutex::new(groups_map),
+            configs: Mutex::new(configs),
+            next_id: Mutex::new(next_id),
+        }
+    }
+
+    /// Snapshot the current overlay state into the persisted DTO shape.
+    /// Mirrors the in-memory map back to disk-safe types so the save path
+    /// doesn't reach into the service's internals.
+    pub async fn snapshot(
+        &self,
+    ) -> (Vec<GroupDto>, HashMap<u64, OverlayConfig>) {
+        let groups: Vec<GroupDto> = self
+            .groups
+            .lock()
+            .await
+            .values()
+            .cloned()
+            .map(GroupDto::from)
+            .collect();
+        let configs = self.configs.lock().await.clone();
+        (groups, configs)
     }
 
     pub async fn create_group(&self, name: String) -> Result<u64, OverlayError> {

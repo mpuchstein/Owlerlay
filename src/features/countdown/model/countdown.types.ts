@@ -32,7 +32,8 @@ export type CountdownCommand =
   | "countdown_resume"
   | "countdown_reset"
   | "countdown_snapshot"
-  | "set_overlay_config";
+  | "set_overlay_config"
+  | "get_overlay_config";
 
 export type CountdownPayload =
   | EmptyPayload

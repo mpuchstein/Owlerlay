@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { setOverlayConfig } from "../api/countdown.client";
+  import { getOverlayConfig, setOverlayConfig } from "../api/countdown.client";
   import type { OverlayConfig, TimeFormat } from "../model/countdown.types";
   import { OVERLAY_SERVER_ORIGIN } from "../../../shared/overlay/origin";
 
@@ -181,11 +181,71 @@
     };
   }
 
+  /** Inverse of `toConfig.iconSize` (a CSS length like `"2rem"`). Falls back
+   * to the default rem size on any unparseable string so a hand-edited
+   * store can't crash the panel. */
+  function parseRem(iconSize: string): number {
+    const m = iconSize.match(/^(-?\d+(?:\.\d+)?)\s*rem$/);
+    const n = m ? Number(m[1]) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_SETTINGS.iconSize;
+  }
+
+  /** Inverse of `toConfig.border` (`"<n>px solid <color>"`). Returns just
+   * the pixel width; colour is parsed separately. Defaults to 0 (no border). */
+  function parseBorderWidth(border: string): number {
+    const m = border.match(/^(\d+)px\s+solid\s+/);
+    return m ? Number(m[1]) : 0;
+  }
+
+  /** Pulls the colour out of `"<n>px solid <color>"`. Default to white if
+   * the parse fails (the panel hides the swatch when borderWidth is 0). */
+  function parseBorderColor(border: string): string {
+    const m = border.match(/^\d+px\s+solid\s+(.+)$/);
+    return m ? m[1].trim() : DEFAULT_SETTINGS.borderColor;
+  }
+
   let icons = $state<string[]>([]);
+  // Local in-flight edit buffer keyed by countdown id. Survives within a
+  // session but is intentionally *not* the source of truth — see `hydrated`
+  // and `getSettings` for the merge.
   let overlaySettings = $state<Record<number, OverlaySettings>>({});
+  // Hydrated snapshot of the persisted `OverlayConfig` per id. Populated by
+  // the `fetchHydrated` effect on mount and whenever the panel is opened
+  // for a different id. Seeds the local buffer so a view-switch or app
+  // restart doesn't blow the styling back to defaults.
+  let hydrated = $state<Record<number, OverlaySettings>>({});
+
+  function settingsFromConfig(c: OverlayConfig): OverlaySettings {
+    // Match the inverse of `toConfig` exactly; defaulted fields stay zero-
+    // value (`DEFAULT_SETTINGS`) so the picker shows them when the user
+    // hasn't touched them yet.
+    return {
+      ...DEFAULT_SETTINGS,
+      icon: c.icon,
+      showTimer: c.showTimer,
+      fontSize: c.fontSize,
+      textColor: c.textColor,
+      iconSize: parseRem(c.iconSize),
+      bgTransparent: c.background === "transparent",
+      bgColor:
+        c.background === "transparent"
+          ? DEFAULT_SETTINGS.bgColor
+          : c.background,
+      borderWidth: parseBorderWidth(c.border),
+      borderColor: parseBorderColor(c.border),
+      borderRadius: c.borderRadius,
+      backdropFilter: c.backdropFilter,
+      boxShadow: Boolean(c.boxShadow),
+      showProgress: c.showProgress,
+      barFg: c.barFg,
+      barBg: c.barBg,
+      dividerColor: c.dividerColor,
+      timeFormat: c.timeFormat,
+    };
+  }
 
   function getSettings(n: number): OverlaySettings {
-    return overlaySettings[n] ?? DEFAULT_SETTINGS;
+    return overlaySettings[n] ?? hydrated[n] ?? DEFAULT_SETTINGS;
   }
   function set(patch: Partial<OverlaySettings>) {
     overlaySettings[id] = { ...getSettings(id), ...patch };
@@ -195,6 +255,23 @@
   }
 
   const s = $derived(getSettings(id));
+
+  // Re-hydrate whenever the panel is opened for a different countdown id,
+  // or when it first mounts. Keeps the styling in sync across app sessions
+  // and across view-switches (countdown → group → countdown).
+  $effect(() => {
+    const target = id;
+    let cancelled = false;
+    void getOverlayConfig(target)
+      .then((c) => {
+        if (cancelled || hydrated[target]) return;
+        hydrated[target] = settingsFromConfig(c);
+      })
+      .catch((e) => console.error(e));
+    return () => {
+      cancelled = true;
+    };
+  });
 
   onMount(async () => {
     try {
