@@ -26,6 +26,7 @@ top of this folder; completed (and now-archived) issues live under
 | # | Title | Priority | Status | Tag |
 |---|---|---|---|---|
 | [008](008-live-tick-followups.md) | Live-tick fan-out follow-ups (tick batching; CSS↔TICK_INTERVAL coupling; Running-guard rationale) | Low | Open | backend/perf |
+| [009](009-overlay-persist-followups.md) | Overlay-persistence review follow-ups (concurrent-save ordering; border-regex; double-clone; one-shot hydration guard) | Low | Open | overlay/persist |
 
 ## Dependency graph (post-001/002)
 
