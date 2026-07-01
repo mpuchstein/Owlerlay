@@ -1,0 +1,3 @@
+# Repository rules
+
+@/AGENTS.md
